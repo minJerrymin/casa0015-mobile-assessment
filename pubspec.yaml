@@ -1,0 +1,34 @@
+name: matchpint
+version: 0.1.0+1
+description: A Flutter matchday companion that helps football fans find the right pub to watch the right match.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_native_splash: ^2.4.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+
+flutter_native_splash:
+  color: "#101114"
+  image: assets/branding/matchpint_logo.png
+  android: true
+  ios: false
+  web: false
+  android_12:
+    color: "#101114"
+    image: assets/branding/matchpint_logo.png

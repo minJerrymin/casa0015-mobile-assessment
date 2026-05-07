@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MatchPint — Find your crowd, not just a screen</title>
+  <style>
+    :root { --bg:#101114; --card:#21242b; --green:#2ecc71; --gold:#f4b238; --cream:#fffef4; --muted:#97a99d; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--cream); }
+    header { padding:32px 6vw; display:flex; align-items:center; justify-content:space-between; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:800; font-size:22px; }
+    .brand img { width:42px; height:42px; border-radius:12px; }
+    .hero { padding:72px 6vw 90px; display:grid; grid-template-columns: 1.1fr .9fr; gap:48px; align-items:center; }
+    h1 { font-size: clamp(44px, 7vw, 88px); line-height:.94; letter-spacing:-3px; margin:0 0 24px; }
+    p { color:var(--muted); font-size:18px; line-height:1.65; max-width:660px; }
+    .cta { display:flex; gap:14px; margin-top:32px; flex-wrap:wrap; }
+    .button { border-radius:999px; padding:14px 20px; text-decoration:none; font-weight:800; }
+    .primary { background:var(--green); color:#07110b; }
+    .secondary { border:1px solid rgba(255,255,255,.14); color:var(--cream); }
+    .phone { min-height:620px; border-radius:42px; padding:22px; background:linear-gradient(160deg, rgba(46,204,113,.18), rgba(244,178,56,.12)); border:1px solid rgba(255,255,255,.1); box-shadow: 0 40px 100px rgba(0,0,0,.35); }
+    .screen { height:100%; border-radius:32px; background:var(--card); padding:24px; overflow:hidden; }
+    .card { padding:20px; border-radius:24px; background:rgba(255,255,255,.055); margin:14px 0; }
+    .score { color:var(--green); font-weight:900; }
+    .grid { display:grid; grid-template-columns: repeat(3,1fr); gap:18px; padding:0 6vw 72px; }
+    .feature { background:var(--card); padding:24px; border-radius:28px; min-height:210px; }
+    .feature b { color:var(--cream); }
+    footer { padding:38px 6vw; color:var(--muted); border-top:1px solid rgba(255,255,255,.08); }
+    @media (max-width: 860px) { .hero, .grid { grid-template-columns:1fr; } .phone { min-height:480px; } }
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="../assets/branding/matchpint_logo.png" alt="MatchPint logo" /> MatchPint</div>
+  <span style="color:var(--muted)">CASA0015 Flutter App</span>
+</header>
+<section class="hero">
+  <div>
+    <h1>Find your crowd, not just a screen.</h1>
+    <p>MatchPint helps football fans choose the right pub for the right match, based on atmosphere, noise, crowd level, screen quality, solo comfort and match relevance.</p>
+    <div class="cta">
+      <a class="button primary" href="#features">Explore features</a>
+      <a class="button secondary" href="../README.md">Read project README</a>
+    </div>
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <h2>Tonight's pick</h2>
+      <div class="card"><b>Arsenal vs Chelsea</b><br><span style="color:var(--muted)">Premier League • 16:30</span></div>
+      <div class="card"><b>The Quiet Half</b><br><span class="score">91 fit</span><br><span style="color:var(--muted)">calm screens • solo-friendly • 55 dB</span></div>
+      <div class="card"><b>The Full Time Arms</b><br><span class="score">84 fit</span><br><span style="color:var(--muted)">big atmosphere • 8 screens • chants likely</span></div>
+    </div>
+  </div>
+</section>
+<section class="grid" id="features">
+  <div class="feature"><b>Fixture-first discovery</b><p>Start with the match, then discover venues that match the tone of the night.</p></div>
+  <div class="feature"><b>Atmosphere sensing</b><p>Match mode captures a lightweight noise-level signal and lets users save how the venue felt.</p></div>
+  <div class="feature"><b>Match night passport</b><p>Every saved pub and fixture becomes part of the user’s personal football watching history.</p></div>
+</section>
+<footer>MatchPint is a student prototype for CASA0015 Mobile Systems & Interactions.</footer>
+</body>
+</html>
