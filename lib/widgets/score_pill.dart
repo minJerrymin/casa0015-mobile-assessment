@@ -10,7 +10,7 @@ class ScorePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = score >= 80
-        ? AppTheme.pitchGreen
+        ? Theme.of(context).colorScheme.primary
         : score >= 65
             ? AppTheme.pintGold
             : Colors.orangeAccent;
@@ -26,7 +26,7 @@ class ScorePill extends StatelessWidget {
         children: [
           Text('$score', style: TextStyle(color: color, fontWeight: FontWeight.w900)),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: AppTheme.cream)),
+          Text(label),
         ],
       ),
     );

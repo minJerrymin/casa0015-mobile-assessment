@@ -10,6 +10,7 @@ class MetricBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = value >= 80 ? Theme.of(context).colorScheme.primary : AppTheme.pintGold;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -18,7 +19,7 @@ class MetricBar extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
-              Text(trailing, style: const TextStyle(color: AppTheme.muted)),
+              Text(trailing, style: TextStyle(color: AppTheme.subtleText(context))),
             ],
           ),
           const SizedBox(height: 8),
@@ -27,8 +28,8 @@ class MetricBar extends StatelessWidget {
             child: LinearProgressIndicator(
               minHeight: 9,
               value: value.clamp(0, 100) / 100,
-              backgroundColor: Colors.white.withOpacity(0.08),
-              color: value >= 80 ? AppTheme.pitchGreen : AppTheme.pintGold,
+              backgroundColor: AppTheme.softSurface(context),
+              color: color,
             ),
           ),
         ],

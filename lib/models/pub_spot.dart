@@ -35,14 +35,15 @@ class PubSpot {
   final double longitude;
   final String description;
 
-  int comfortScore({required bool prefersCalm, required bool soloMode}) {
+  int comfortScore({required bool prefersCalm, required bool soloMode, bool wantsFood = true}) {
     final noiseScore = prefersCalm ? (100 - noiseDb).clamp(0, 100) : noiseDb.clamp(0, 100);
     final crowdScore = prefersCalm ? (100 - crowdLevel).clamp(0, 100) : crowdLevel.clamp(0, 100);
     final soloScore = soloMode ? (soloFriendly ? 100 : 45) : 70;
+    final foodComponent = wantsFood ? foodScore : 70;
     return ((noiseScore * 0.28) +
             (crowdScore * 0.22) +
             (screenQuality * 0.22) +
-            (foodScore * 0.12) +
+            (foodComponent * 0.12) +
             (soloScore * 0.16))
         .round();
   }

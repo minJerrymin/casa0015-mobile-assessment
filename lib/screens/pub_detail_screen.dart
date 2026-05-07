@@ -22,7 +22,8 @@ class PubDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = pub.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode);
+    final muted = AppTheme.subtleText(context);
+    final score = pub.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood);
     return Scaffold(
       appBar: AppBar(title: Text(pub.name)),
       body: ListView(
@@ -32,9 +33,9 @@ class PubDetailScreen extends StatelessWidget {
             height: 180,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(colors: [AppTheme.pitchGreen.withOpacity(0.22), AppTheme.pintGold.withOpacity(0.24)]),
+              gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.22), AppTheme.pintGold.withOpacity(0.24)]),
             ),
-            child: const Center(child: Icon(Icons.sports_bar, size: 76, color: AppTheme.cream)),
+            child: Center(child: Icon(Icons.sports_bar, size: 76, color: Theme.of(context).colorScheme.onSurface)),
           ),
           const SizedBox(height: 18),
           Row(
@@ -44,7 +45,7 @@ class PubDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away • ${pub.vibe}', style: const TextStyle(color: AppTheme.muted)),
+          Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away • ${pub.vibe}', style: TextStyle(color: muted)),
           const SizedBox(height: 16),
           Text(pub.description, style: const TextStyle(height: 1.4)),
           const SizedBox(height: 22),

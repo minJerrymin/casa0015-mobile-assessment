@@ -17,11 +17,11 @@ class MatchPintLogo extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppTheme.card,
-            border: Border.all(color: AppTheme.pitchGreen.withOpacity(0.45), width: 2),
+            color: AppTheme.logoSurface(context),
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.45), width: 2),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.pitchGreen.withOpacity(0.16),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.16),
                 blurRadius: 32,
                 spreadRadius: 4,
               ),
@@ -31,7 +31,7 @@ class MatchPintLogo extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.sports_soccer, size: size * 0.56, color: AppTheme.cream),
+                Icon(Icons.sports_soccer, size: size * 0.56, color: Theme.of(context).colorScheme.onSurface),
                 Transform.translate(
                   offset: Offset(0, -size * 0.28),
                   child: Icon(Icons.sports_bar, size: size * 0.36, color: AppTheme.pintGold),
@@ -52,7 +52,7 @@ class MatchPintLogo extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Find your crowd, not just a screen.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.subtleText(context)),
           ),
         ],
       ],

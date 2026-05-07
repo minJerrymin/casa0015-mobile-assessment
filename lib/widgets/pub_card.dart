@@ -18,9 +18,11 @@ class PubCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = AppTheme.subtleText(context);
     final score = pub.comfortScore(
       prefersCalm: preferences.prefersCalm,
       soloMode: preferences.soloMode,
+      wantsFood: preferences.wantsFood,
     );
     return Card(
       child: InkWell(
@@ -39,7 +41,7 @@ class PubCard extends StatelessWidget {
                       children: [
                         Text(pub.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 4),
-                        Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away', style: const TextStyle(color: AppTheme.muted)),
+                        Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away', style: TextStyle(color: muted)),
                       ],
                     ),
                   ),
@@ -57,6 +59,14 @@ class PubCard extends StatelessWidget {
                   _Tag(icon: Icons.people, label: '${pub.crowdLevel}% crowd'),
                   _Tag(icon: Icons.tv, label: '${pub.screenQuality}% screens'),
                   if (pub.soloFriendly) const _Tag(icon: Icons.person, label: 'solo-friendly'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text('Tap for venue details and match mode', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 12.5)),
                 ],
               ),
             ],
@@ -77,13 +87,13 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: AppTheme.charcoal,
+        color: AppTheme.softSurface(context),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppTheme.pitchGreen),
+          Icon(icon, size: 15, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(label, style: const TextStyle(fontSize: 12.5)),
         ],

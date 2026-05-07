@@ -15,12 +15,13 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = AppTheme.subtleText(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
       children: [
         Text('My Nights', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
-        const Text('Your personal football watching passport. Save where you watched, how it felt, and whether you would return.', style: TextStyle(color: AppTheme.muted)),
+        Text('Your personal football watching passport. Save where you watched, how it felt, and whether you would return.', style: TextStyle(color: muted)),
         const SizedBox(height: 20),
         if (checkIns.isEmpty)
           Card(
@@ -28,11 +29,11 @@ class HistoryScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(Icons.bookmark_border, size: 54, color: AppTheme.pitchGreen.withOpacity(0.8)),
+                  Icon(Icons.bookmark_border, size: 54, color: Theme.of(context).colorScheme.primary.withOpacity(0.8)),
                   const SizedBox(height: 14),
                   Text('No match nights yet', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
-                  const Text('Start match mode from any pub detail page, then save your first watching experience.', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.muted)),
+                  Text('Start match mode from any pub detail page, then save your first watching experience.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
                 ],
               ),
             ),
@@ -48,7 +49,7 @@ class HistoryScreen extends StatelessWidget {
                       children: [
                         Text(entry.matchTitle, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                         const SizedBox(height: 4),
-                        Text('${entry.pubName} • ${_format(entry.timestamp)}', style: const TextStyle(color: AppTheme.muted)),
+                        Text('${entry.pubName} • ${_format(entry.timestamp)}', style: TextStyle(color: muted)),
                         const SizedBox(height: 12),
                         Wrap(spacing: 8, children: [
                           Chip(label: Text(entry.mood)),
