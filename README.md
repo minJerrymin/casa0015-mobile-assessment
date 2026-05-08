@@ -62,12 +62,12 @@ Recommended screenshot set:
 Recommended paths:
 
 ```text
-docs/screenshots/home.png
-docs/screenshots/matches.png
-docs/screenshots/pubs.png
-docs/screenshots/pub-detail.png
-docs/screenshots/match-mode.png
-docs/demo/matchpint-demo.mp4
+docs/screenshots/01-splash.png
+docs/screenshots/02-home.png
+docs/screenshots/03-matches.png
+docs/screenshots/04-pubs.png
+docs/screenshots/05-pub-detail.png
+docs/screenshots/06-match-mode.png
 ```
 
 ---
