@@ -10,7 +10,7 @@
     body { margin:0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--cream); }
     header { padding:32px 6vw; display:flex; align-items:center; justify-content:space-between; }
     .brand { display:flex; align-items:center; gap:12px; font-weight:800; font-size:22px; }
-    .brand img { width:42px; height:42px; border-radius:12px; object-fit:cover; }
+    .brand-mark { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:var(--green); color:#07110b; font-weight:900; }
     .hero { padding:72px 6vw 90px; display:grid; grid-template-columns: 1.1fr .9fr; gap:48px; align-items:center; }
     h1 { font-size: clamp(44px, 7vw, 88px); line-height:.94; letter-spacing:-3px; margin:0 0 24px; }
     h2 { margin-top:0; }
@@ -27,14 +27,18 @@
     .feature { background:var(--card); padding:24px; border-radius:28px; min-height:210px; }
     .feature b { color:var(--cream); }
     .strip { padding: 0 6vw 72px; }
+
+    .screenshots { padding:0 6vw 72px; }
+    .shot-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:18px; }
+    .shot-grid img { width:100%; border-radius:24px; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 60px rgba(0,0,0,.25); }
     .strip-inner { background: rgba(255,255,255,.055); border-radius: 28px; padding: 28px; border: 1px solid rgba(255,255,255,.08); }
     footer { padding:38px 6vw; color:var(--muted); border-top:1px solid rgba(255,255,255,.08); }
-    @media (max-width: 860px) { .hero, .grid { grid-template-columns:1fr; } .phone { min-height:480px; } }
+    @media (max-width: 860px) { .hero, .grid { grid-template-columns:1fr; } .shot-grid { grid-template-columns:1fr 1fr; } .phone { min-height:480px; } }
   </style>
 </head>
 <body>
 <header>
-  <div class="brand"><img src="../assets/branding/matchpint_logo.png" alt="MatchPint logo" /> MatchPint</div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true">MP</span> MatchPint</div>
   <span style="color:var(--muted)">CASA0015 Flutter App</span>
 </header>
 <section class="hero">
@@ -59,6 +63,18 @@
   <div class="feature"><b>Fixture-first discovery</b><p>Start with the match, then discover venues that match the tone of the night.</p></div>
   <div class="feature"><b>Location-aware pubs</b><p>Use current location or choose an area to compare nearby football-friendly pubs.</p></div>
   <div class="feature"><b>Match night passport</b><p>Every saved pub and fixture becomes part of the user’s personal football watching history.</p></div>
+</section>
+<section class="screenshots" id="screenshots">
+  <h2>App screens</h2>
+  <p>Selected screenshots from the final MatchPint prototype.</p>
+  <div class="shot-grid">
+    <img src="screenshots/03-home.jpg" alt="MatchPint home screen">
+    <img src="screenshots/04-matches.jpg" alt="MatchPint matches screen">
+    <img src="screenshots/05-pubs-search.jpg" alt="MatchPint pubs search screen">
+    <img src="screenshots/06-pub-detail.jpg" alt="MatchPint pub detail screen">
+    <img src="screenshots/08-experience-record.jpg" alt="MatchPint experience record screen">
+    <img src="screenshots/09-settings.jpg" alt="MatchPint settings screen">
+  </div>
 </section>
 <section class="strip">
   <div class="strip-inner">
