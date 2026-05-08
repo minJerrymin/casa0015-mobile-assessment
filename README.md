@@ -1,54 +1,128 @@
 # MatchPint
 
-**MatchPint** is a Flutter mobile application for CASA0015: Mobile Systems and Interactions. It helps football fans plan where to watch live matches by starting with the fixture and then recommending suitable pubs nearby.
+**MatchPint** is an Android mobile app that helps football fans find the right pub for the right match.
 
-The app focuses on a common match-day problem: fans often know which game they want to watch, but they do not know which pub is likely to show it, how the venue feels, or whether it matches the type of football night they want. MatchPint connects fixtures, venue information, location-based discovery, user preferences, pub tags and lightweight match-night feedback into a single mobile experience.
+Instead of starting with a generic list of pubs, MatchPint starts with the user's real match-day intention: *which game do I want to watch, and where should I go to watch it?* The app connects fixtures, nearby venues, map-based discovery, pub features, user preferences and community comments into one match-night planning experience.
 
-- **Repository:** <https://github.com/minJerrymin/casa0015-mobile-assessment>
+- **Download APK:** <https://github.com/minJerrymin/casa0015-mobile-assessment/releases/latest>
 - **Landing page:** <https://minjerrymin.github.io/casa0015-mobile-assessment/>
-- **Latest APK release:** <https://github.com/minJerrymin/casa0015-mobile-assessment/releases/latest>
+- **Source repository:** <https://github.com/minJerrymin/casa0015-mobile-assessment>
 
 ---
 
-## Project overview
+## The story behind MatchPint
 
-MatchPint is designed around a fixture-first user journey. Instead of asking users to search for pubs first, the app encourages users to begin with a football match, then compare recommended venues based on proximity, features, map location, comments and match-day suitability.
+Watching football in a pub is not only about finding a screen. It is about finding the right social setting.
 
-The project fits the Connected Environments theme by linking the user’s physical context, especially location and nearby urban leisure spaces, with digital information about football fixtures and venue suitability. The app uses mobile interaction patterns including onboarding, bottom navigation, cards, maps, location prompts, detail pages, comments and saved match-night records.
+A fan may want a loud pub for a derby, a calmer place to watch alone, a venue with food, or simply somewhere nearby that is likely to show the match. Existing search tools often treat pubs as static places, while the real decision is more situational: the same venue can feel different depending on the fixture, the crowd, the time and the user's mood.
 
----
+MatchPint was designed around that moment of uncertainty before a match:
 
-## Core features
+> "I know the game I want to watch, but I don't know where I should go."
 
-### Fixture-first discovery
-
-Users can browse upcoming football fixtures and start planning from the match they want to watch. This creates a clearer narrative than a generic venue search because the user journey begins with a real match-day intention.
-
-### Recommended pubs
-
-The app recommends pubs that may be suitable for watching football. Pub cards present concise venue information, feature tags and match-related suitability signals so users can quickly compare options.
-
-### Location-aware pub search
-
-MatchPint can use the phone’s location to rank and refresh nearby pub recommendations. Users can also choose an area manually, which supports users who are planning ahead or checking pubs in a different part of London.
-
-### Pub detail pages
-
-Each pub detail page gives users a focused view of the venue, including map location, tags, match suitability, comments and actions for planning a match night.
-
-### Match mode and saved nights
-
-Users can start a match-night mode, record lightweight experience feedback and save match-night history. This gives the app repeat-use value beyond a single search session.
-
-### Account, preferences and settings
-
-The app includes authentication, onboarding, user preferences, theme settings and account management. Preferences help shape the user experience around the kind of pub atmosphere the user wants.
+The app turns this into a fixture-first mobile journey. Users begin with football matches, compare recommended pubs, check location and venue details, and save their own match-night experience afterwards.
 
 ---
 
-## Screenshots and demo media
+## Who the app is for
 
-The submitted app screenshots are committed in `docs/screenshots/` and are embedded below so the README and GitHub Pages landing page use the same stable image paths.
+MatchPint is aimed at football fans in London who want to plan a pub-based match night with more confidence.
+
+It is especially useful for:
+
+- fans looking for a pub that is likely to show a specific fixture;
+- people watching alone who want a comfortable or calmer venue;
+- groups comparing pubs by atmosphere, food, screens and distance;
+- users planning ahead in another area of the city;
+- students or visitors who do not already know the local football pub scene.
+
+---
+
+## How to install the app
+
+MatchPint is distributed as an Android APK through GitHub Releases.
+
+1. Open the latest release page:  
+   <https://github.com/minJerrymin/casa0015-mobile-assessment/releases/latest>
+
+2. Scroll to **Assets**.
+
+3. Download the `.apk` file.
+
+4. Open the APK on an Android phone.
+
+5. If Android asks for permission, allow your browser or file manager to **install unknown apps**.
+
+6. Complete installation and open **MatchPint**.
+
+> Do not use **Code → Download ZIP** if you only want to install the app. That downloads the source code, not the Android installer.
+
+---
+
+## User guide
+
+### 1. Create an account or sign in
+
+Open the app and create a MatchPint account. The account system supports Firebase Authentication when the released APK is correctly configured.
+
+After signing in, the app guides the user through onboarding and preference setup.
+
+### 2. Set your match-night preferences
+
+During onboarding, choose preferences that shape recommendations, such as:
+
+- favourite team;
+- calmer or louder atmosphere;
+- solo-friendly viewing;
+- food availability.
+
+These preferences influence how pubs are ranked and presented.
+
+### 3. Start with the match
+
+The **Matches** page lets users browse football fixtures. Instead of choosing a pub first, users can start with the match they actually care about.
+
+Selecting a match opens venue recommendations related to that fixture.
+
+### 4. Compare recommended pubs
+
+The **Pubs** page and recommendation cards help users compare possible venues by:
+
+- location and area;
+- distance;
+- screen and atmosphere suitability;
+- food and comfort signals;
+- feature tags;
+- match-related fit.
+
+Users can refresh based on current location or choose another area manually.
+
+### 5. Open a pub detail page
+
+Each pub page brings together the information needed for a match-night decision:
+
+- map location;
+- pub feature tags;
+- predicted match suitability;
+- experience metrics;
+- community comment summary;
+- action to add the pub and fixture to a match night.
+
+### 6. Use comments to improve venue evidence
+
+Users can add a comment for a pub and match, including whether the pub is showing the game, screen quality, crowd level, noise, food rating and an optional note.
+
+These reports contribute to a Firestore-backed venue summary when Firebase is available.
+
+### 7. Save a match-night experience
+
+After choosing a pub and fixture, users can save a match-night record. This creates a lightweight "passport" of past football-watching experiences.
+
+---
+
+## Screenshots
+
+The screenshots below show the submitted MatchPint prototype.
 
 | Login / register | Onboarding | Home |
 |---|---|---|
@@ -64,141 +138,84 @@ The submitted app screenshots are committed in `docs/screenshots/` and are embed
 
 ---
 
-## Technical implementation
+## Core features
 
-MatchPint is built with **Flutter** and **Dart**. The app uses a single Flutter codebase and targets Android for the final APK submission.
+### Fixture-first planning
 
-Main technologies and packages include:
+The app begins with fixtures because the user's real goal is usually to watch a specific match. This makes the experience more purposeful than a generic venue list.
 
-| Technology / package | Use in the app |
+### Recommended pubs
+
+MatchPint recommends pubs that are suitable for football viewing and presents them with compact, decision-friendly information.
+
+### Location-aware search
+
+The app can use the user's current location to search nearby pubs, while also allowing manual area selection for planning ahead.
+
+### Pub detail and map support
+
+The pub detail page combines venue information, feature tags and map location so users can move from browsing to action.
+
+### Community comments
+
+Users can submit match-specific venue comments. When Firebase is available, these comments update Firestore collections and feed into aggregated venue evidence.
+
+### Match-night record
+
+Users can save match-night experiences, giving the app a sense of continuity rather than being a one-off search tool.
+
+---
+
+## Connected Environments concept
+
+MatchPint treats the city as a connected match-day environment.
+
+The app links digital match information with physical pub spaces, mobile location, maps, user preferences and community feedback. In this sense, the app is not only a pub directory. It is a small connected system that helps users interpret urban leisure spaces through the context of live football.
+
+The project explores how mobile systems can support decisions that happen between online information and real-world social places.
+
+---
+
+## Data and functionality notes
+
+- Firebase Authentication is used for account registration and login when the released APK is configured correctly.
+- Firestore is used for venue comments and aggregated pub-match reports.
+- Some app content uses fallback/mock data so the prototype remains usable even when live services are unavailable.
+- Preferences and saved match-night records are stored locally on the device in this prototype.
+- If the app is uninstalled, local-only preferences and saved records may be removed by Android.
+
+---
+
+## Technology overview
+
+MatchPint was built with **Flutter** and **Dart** for Android.
+
+Key technologies used in the prototype include:
+
+| Area | Implementation |
 |---|---|
-| Flutter / Dart | Cross-platform mobile app framework and programming language |
-| Material widgets | Core UI layout, navigation, cards, forms and controls |
-| Firebase Core | Firebase initialisation |
-| Firebase Authentication | Account registration and login support |
-| Cloud Firestore | Cloud data support for live/mobile data integration |
-| geolocator | Device location and nearby pub discovery |
-| flutter_map | Interactive map display |
-| latlong2 | Geographic coordinates and distance calculations |
-| url_launcher | Opening external map/navigation links |
-| record | Lightweight audio/noise-related match-night interaction |
-| shared_preferences | Local persistence for settings, onboarding and user state |
-| http | Network requests and API/service integration |
+| Mobile framework | Flutter / Dart |
+| Authentication | Firebase Authentication |
+| Cloud comments | Cloud Firestore |
+| Local persistence | Shared Preferences |
+| Location | Geolocator |
+| Maps | Flutter Map and LatLong2 |
+| External actions | URL Launcher |
+| UI | Material components and custom app styling |
 
 ---
 
-## Repository structure
+## Future improvements
 
-```text
-lib/                         Flutter/Dart source code
-lib/screens/                 App screens and major views
-lib/services/                Firebase, location, live data and local storage services
-lib/models/                  App data models
-lib/data/                    Mock/fallback data
-lib/theme/                   App theme definitions
-assets/branding/             Logo and brand assets
-assets/launcher/             Launcher/splash assets
-android/                     Android platform project
-docs/                        GitHub Pages landing page
-landing/                     Original landing-page source
-functions/                   Firebase/backend scaffold
-.github/workflows/           GitHub Actions build and release workflow
-submission-file.md           CASA0015 submission declaration file
-```
+With more development time, MatchPint could be improved through:
 
----
-
-## How to run locally
-
-### Prerequisites
-
-Install Flutter and Android tooling, then check your setup:
-
-```bash
-flutter doctor
-```
-
-Accept Android licences if needed:
-
-```bash
-flutter doctor --android-licenses
-```
-
-### Install dependencies
-
-```bash
-flutter pub get
-```
-
-### Run on an Android device or emulator
-
-```bash
-flutter run
-```
-
----
-
-## How to build the APK manually
-
-From the project root:
-
-```bash
-flutter clean
-flutter pub get
-flutter build apk --release
-```
-
-The generated APK will be located at:
-
-```text
-build/app/outputs/flutter-apk/app-release.apk
-```
-
-A helper script is also provided:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/build_release_apk.ps1 v1.0.2
-```
-
-or on macOS/Linux:
-
-```bash
-bash scripts/build_release_apk.sh v1.0.2
-```
-
-The helper script copies the APK into:
-
-```text
-release/MatchPint-v1.0.2.apk
-```
-
-The `release/` folder should not be committed to the repository. APK files should be uploaded through GitHub Releases.
-
----
-
-## GitHub Release workflow
-
-This repository includes a GitHub Actions workflow that builds a release APK when a version tag is pushed.
-
-Create and push a tag:
-
-```bash
-git tag v1.0.2
-git push origin v1.0.2
-```
-
-GitHub Actions will then:
-
-1. Install Flutter
-2. Download dependencies
-3. Analyse the project
-4. Build the Android release APK
-5. Upload the APK as a workflow artifact
-6. Attach the APK to a GitHub Release
-
-The release will appear here:
-
-<https://github.com/minJerrymin/casa0015-mobile-assessment/releases/latest>
+- stronger live fixture and venue data sources;
+- verified pub-owner information about which matches are shown;
+- richer community moderation for comments;
+- cloud synchronisation for saved match-night history;
+- better recommendation logic based on repeated user behaviour;
+- accessibility testing across screen sizes and assistive technologies;
+- push notifications for upcoming fixtures and saved match nights.
 
 ---
 
@@ -206,35 +223,7 @@ The release will appear here:
 
 The landing page is published from the `docs/` folder through GitHub Pages.
 
-Expected URL:
-
-<https://minjerrymin.github.io/casa0015-mobile-assessment/>
-
-To enable it in GitHub:
-
-```text
-Settings → Pages → Deploy from a branch → main → /docs
-```
-
----
-
-## Connected Environments relevance
-
-MatchPint treats the city as a connected match-day environment. It combines mobile location, pub discovery, map-based interaction, live/dynamic fixture information and user-generated experience feedback to support decisions in physical urban spaces. The app is not just a static pub list; it connects digital match information with the user’s movement, preferences and social football-watching context.
-
----
-
-## Future improvements
-
-With more development time, MatchPint could be extended with:
-
-- Real venue verification through pub owners or community moderation
-- More robust live sports fixture APIs
-- Crowd-level prediction based on repeated user feedback
-- Push notifications for match reminders and pub availability
-- Better accessibility testing and screen-reader refinement
-- More complete Firebase-backed comment and history synchronisation
-- A richer recommendation model based on user behaviour over time
+URL: <https://minjerrymin.github.io/casa0015-mobile-assessment/>
 
 ---
 
@@ -248,4 +237,4 @@ University College London
 
 ## Declaration
 
-This repository contains the source code and supporting files for the CASA0015 final mobile application assessment. Where third-party packages, APIs, documentation or tutorials informed the work, these are acknowledged in `submission-file.md` and in the project dependencies.
+This repository contains the source code and supporting files for the CASA0015 final mobile application assessment. Third-party packages, APIs, documentation and external resources used in the project are acknowledged in `submission-file.md` and through the project dependency files.
