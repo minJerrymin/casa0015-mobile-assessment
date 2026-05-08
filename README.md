@@ -48,9 +48,18 @@ The app includes authentication, onboarding, user preferences, theme settings an
 
 ## Screenshots and demo media
 
-The screenshot image files are expected to live in `docs/screenshots/` so the README and GitHub Pages site can reference the same repository assets. In this checkout, no exported app screenshots were visible under `screenshots/` or `docs/screenshots/`, so the links below are intentionally documented as expected paths rather than embedded as broken images.
+No final app screenshots are currently committed. When screenshots are added for submission evidence, keep them in `docs/screenshots/` so README and GitHub Pages links can use stable paths, and optionally keep originals in `screenshots/` if they are useful source captures.
 
-Expected screenshot paths once the uploaded screenshots are available on this branch:
+Recommended screenshot set:
+
+1. Splash / onboarding
+2. Home screen
+3. Matches screen
+4. Recommended pubs screen
+5. Pub detail screen
+6. Match mode / saved night screen
+
+Recommended paths:
 
 ```text
 docs/screenshots/01-splash.png
@@ -59,12 +68,6 @@ docs/screenshots/03-matches.png
 docs/screenshots/04-pubs.png
 docs/screenshots/05-pub-detail.png
 docs/screenshots/06-match-mode.png
-```
-
-Expected demo video/GIF path:
-
-```text
-docs/demo/matchpint-demo.mp4
 ```
 
 ---
