@@ -13,3 +13,6 @@ android/key.properties
 .DS_Store
 .idea/
 .vscode/
+release/
+*.iml
+*.log
