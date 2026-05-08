@@ -13,6 +13,8 @@ class PubSpot {
     required this.priceLevel,
     required this.features,
     required this.supportedTeams,
+    required this.broadcastingFixtureIds,
+    required this.broadcastConfidence,
     required this.latitude,
     required this.longitude,
     required this.description,
@@ -31,6 +33,8 @@ class PubSpot {
   final int priceLevel;
   final List<String> features;
   final List<String> supportedTeams;
+  final List<String> broadcastingFixtureIds;
+  final int broadcastConfidence;
   final double latitude;
   final double longitude;
   final String description;

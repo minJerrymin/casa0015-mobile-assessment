@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+
 import '../data/mock_data.dart';
 import '../models/match_fixture.dart';
 import '../models/pub_spot.dart';
 import '../models/user_preferences.dart';
+import '../services/live_data_service.dart';
+import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pub_card.dart';
 
 class PubListScreen extends StatefulWidget {
-  const PubListScreen({super.key, required this.preferences, required this.onOpenPub, this.fixture});
+  const PubListScreen({
+    super.key,
+    required this.preferences,
+    required this.onOpenPub,
+    required this.pubs,
+    required this.fixtures,
+    required this.liveDataMessage,
+    this.fixture,
+  });
+
   final UserPreferences preferences;
   final ValueChanged<PubSpot> onOpenPub;
+  final List<PubSpot> pubs;
+  final List<MatchFixture> fixtures;
+  final String liveDataMessage;
   final MatchFixture? fixture;
 
   @override
@@ -17,16 +32,88 @@ class PubListScreen extends StatefulWidget {
 }
 
 class _PubListScreenState extends State<PubListScreen> {
+  final LocationService _locationService = LocationService();
+  final MatchPintLiveDataService _liveData = MatchPintLiveDataService();
   bool _calmOnly = false;
   bool _soloOnly = false;
   bool _foodFirst = false;
+  bool _gettingLocation = false;
+  double? _userLat;
+  double? _userLng;
+  List<PubSpot>? _nearbyLivePubs;
+  String _locationMessage = 'Use GPS to load nearby OSM pubs and rank them from where you are now.';
   String _query = '';
+
+  @override
+  void dispose() {
+    _liveData.dispose();
+    super.dispose();
+  }
+
+  bool _matchesFixture(PubSpot pub, MatchFixture fixture) => pubIsShowingFixture(pub, fixture);
+
+  int _fixtureBoost(PubSpot pub, MatchFixture? fixture) {
+    final selectedFixture = fixture ?? bestFixtureForPub(pub, preferences: widget.preferences, fixtures: _fixtures);
+    return (fixtureBroadcastScore(pub, selectedFixture) / 4).round();
+  }
+
+  List<MatchFixture> get _fixtures => widget.fixtures.isEmpty ? mockFixtures : widget.fixtures;
+  List<PubSpot> get _pubs => _nearbyLivePubs ?? (widget.pubs.isEmpty ? mockPubs : widget.pubs);
+
+  double _distanceFor(PubSpot pub) {
+    if (_userLat == null || _userLng == null) return pub.distanceKm;
+    return _locationService.distanceKm(
+      fromLatitude: _userLat!,
+      fromLongitude: _userLng!,
+      toLatitude: pub.latitude,
+      toLongitude: pub.longitude,
+    );
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _gettingLocation = true;
+      _locationMessage = 'Requesting Android location permission...';
+    });
+    final result = await _locationService.getCurrentLocation();
+    if (!mounted) return;
+    if (!result.success || result.latitude == null || result.longitude == null) {
+      setState(() {
+        _gettingLocation = false;
+        _locationMessage = result.message;
+      });
+      return;
+    }
+
+    setState(() {
+      _userLat = result.latitude;
+      _userLng = result.longitude;
+      _locationMessage = 'GPS fixed. Loading real OSM pubs nearby...';
+    });
+
+    final livePubs = await _liveData.fetchNearbyPubs(
+      latitude: result.latitude!,
+      longitude: result.longitude!,
+      fixtures: _fixtures,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _gettingLocation = false;
+      _nearbyLivePubs = livePubs.pubs;
+      _locationMessage = livePubs.message;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final title = widget.fixture == null ? 'Find pubs' : 'Pubs for ${widget.fixture!.title}';
     final q = _query.trim().toLowerCase();
-    final pubs = mockPubs.where((p) {
+    final fixture = widget.fixture;
+    final allPubs = _pubs;
+    final fixtureMatched = fixture == null ? allPubs : allPubs.where((p) => _matchesFixture(p, fixture)).toList();
+    final basePubs = fixture == null || fixtureMatched.isNotEmpty ? fixtureMatched : allPubs;
+    final pubs = basePubs.where((p) {
       if (_calmOnly && p.noiseDb > 65) return false;
       if (_soloOnly && !p.soloFriendly) return false;
       if (q.isEmpty) return true;
@@ -34,21 +121,72 @@ class _PubListScreenState extends State<PubListScreen> {
     }).toList()
       ..sort((a, b) {
         if (_foodFirst) return b.foodScore.compareTo(a.foodScore);
-        return b.comfortScore(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly, wantsFood: widget.preferences.wantsFood || _foodFirst).compareTo(a.comfortScore(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly, wantsFood: widget.preferences.wantsFood || _foodFirst));
+        final aDistance = _distanceFor(a);
+        final bDistance = _distanceFor(b);
+        final aScore = a.comfortScore(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly, wantsFood: widget.preferences.wantsFood || _foodFirst) +
+            _fixtureBoost(a, fixture) -
+            (aDistance * 4).round();
+        final bScore = b.comfortScore(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly, wantsFood: widget.preferences.wantsFood || _foodFirst) +
+            _fixtureBoost(b, fixture) -
+            (bDistance * 4).round();
+        return bScore.compareTo(aScore);
       });
 
     final prefs = widget.preferences.copyWith(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly);
+    final subtitle = fixture == null
+        ? '${pubs.length} live/prototype spots ranked by atmosphere fit, screen quality, comfort, and distance.'
+        : '${pubs.length} spots likely to show this fixture. Broadcast status is estimated unless users or venues confirm it.';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
       children: [
         Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
-        Text('${pubs.length} spots ranked by atmosphere fit, screen quality, comfort, and distance.', style: TextStyle(color: AppTheme.subtleText(context))),
+        Text(subtitle, style: TextStyle(color: AppTheme.subtleText(context))),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(Icons.public, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(child: Text(widget.liveDataMessage, style: TextStyle(color: AppTheme.subtleText(context), fontSize: 12.5, height: 1.35))),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 16),
         TextField(
           decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search pub, area, or feature'),
           onChanged: (value) => setState(() => _query = value),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.my_location, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(_locationMessage, style: TextStyle(color: AppTheme.subtleText(context)))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: _gettingLocation ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.location_searching),
+                    label: Text(_gettingLocation ? 'Loading nearby pubs...' : 'Use my location'),
+                    onPressed: _gettingLocation ? null : _useCurrentLocation,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 14),
         Wrap(spacing: 10, runSpacing: 10, children: [
@@ -61,14 +199,24 @@ class _PubListScreenState extends State<PubListScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),
-              child: Text('No pubs match your search yet.', style: TextStyle(color: AppTheme.subtleText(context))),
+              child: Text('No pubs match your current filters yet.', style: TextStyle(color: AppTheme.subtleText(context))),
             ),
           )
         else
-          ...pubs.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: PubCard(pub: p, preferences: prefs, onTap: () => widget.onOpenPub(p)),
-              )),
+          ...pubs.map((p) {
+            final selectedFixture = fixture ?? bestFixtureForPub(p, preferences: widget.preferences, fixtures: _fixtures);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: PubCard(
+                pub: p,
+                preferences: prefs,
+                distanceKmOverride: _distanceFor(p),
+                matchLabel: selectedFixture.title,
+                broadcastConfidence: fixtureBroadcastScore(p, selectedFixture),
+                onTap: () => widget.onOpenPub(p),
+              ),
+            );
+          }),
       ],
     );
   }

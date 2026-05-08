@@ -5,7 +5,17 @@ import '../theme/app_theme.dart';
 import '../widgets/match_card.dart';
 
 class MatchesScreen extends StatefulWidget {
-  const MatchesScreen({super.key, required this.onOpenMatch});
+  const MatchesScreen({
+    super.key,
+    required this.fixtures,
+    required this.liveDataMessage,
+    required this.loadingLiveData,
+    required this.onOpenMatch,
+  });
+
+  final List<MatchFixture> fixtures;
+  final String liveDataMessage;
+  final bool loadingLiveData;
   final ValueChanged<MatchFixture> onOpenMatch;
 
   @override
@@ -19,14 +29,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
   @override
   Widget build(BuildContext context) {
     final filters = ['All', 'Premier League', 'Women’s football', 'London'];
-    final matches = mockFixtures.where((match) {
+    final source = widget.fixtures.isEmpty ? mockFixtures : widget.fixtures;
+    final matches = source.where((match) {
       final q = _query.trim().toLowerCase();
       final matchesQuery = q.isEmpty || match.title.toLowerCase().contains(q) || match.competition.toLowerCase().contains(q) || match.venue.toLowerCase().contains(q);
       if (!matchesQuery) return false;
       if (_filter == 'All') return true;
-      if (_filter == 'Women’s football') return match.title.toLowerCase().contains('women');
-      if (_filter == 'London') return ['Arsenal', 'Chelsea', 'Tottenham', 'West Ham'].any(match.title.contains);
-      return match.competition == _filter;
+      if (_filter == 'Women’s football') return match.title.toLowerCase().contains('women') || match.competition.toLowerCase().contains('women');
+      if (_filter == 'London') return ['Arsenal', 'Chelsea', 'Tottenham', 'West Ham', 'Crystal Palace', 'Brentford', 'Fulham'].any(match.title.contains);
+      return match.competition.toLowerCase().contains(_filter.toLowerCase());
     }).toList();
 
     return ListView(
@@ -35,7 +46,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
         Text('Choose a match', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
         Text('Start with the fixture. MatchPint then finds the right pub for the type of night you want.', style: TextStyle(color: AppTheme.subtleText(context))),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                widget.loadingLiveData
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Icon(Icons.sports_soccer, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(child: Text(widget.liveDataMessage, style: TextStyle(fontSize: 12.5, color: AppTheme.subtleText(context), height: 1.35))),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
         TextField(
           decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search team, competition, or venue'),
           onChanged: (value) => setState(() => _query = value),

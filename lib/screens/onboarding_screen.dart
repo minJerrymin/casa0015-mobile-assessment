@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_preferences.dart';
+import '../data/team_data.dart';
 import '../theme/app_theme.dart';
 import '../widgets/matchpint_logo.dart';
 
@@ -21,7 +22,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final muted = AppTheme.subtleText(context);
-    final teams = ['Arsenal', 'Chelsea', 'Tottenham', 'West Ham', 'Liverpool', 'England Women'];
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -36,16 +36,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 28),
             const Text('Favourite team', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: teams.map((team) {
-                return ChoiceChip(
-                  label: Text(team),
-                  selected: _team == team,
-                  onSelected: (_) => setState(() => _team = team),
-                );
-              }).toList(),
+            DropdownButtonFormField<String>(
+              value: premierLeagueTeams.contains(_team) ? _team : premierLeagueTeams.first,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.shield),
+                labelText: 'Select a Premier League club',
+              ),
+              items: premierLeagueTeams
+                  .map((team) => DropdownMenuItem<String>(
+                        value: team,
+                        child: Text(team, overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (team) => setState(() => _team = team ?? _team),
             ),
             const SizedBox(height: 26),
             SwitchListTile.adaptive(

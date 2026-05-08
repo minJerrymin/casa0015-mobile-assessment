@@ -16,6 +16,7 @@ import 'screens/pub_detail_screen.dart';
 import 'screens/pub_list_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/live_data_service.dart';
 import 'services/local_store.dart';
 import 'theme/app_theme.dart';
 
@@ -33,20 +34,33 @@ class MatchPintApp extends StatefulWidget {
 
 class _MatchPintAppState extends State<MatchPintApp> {
   final LocalStore _store = LocalStore();
+  final MatchPintLiveDataService _liveData = MatchPintLiveDataService();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
   bool _showSplash = true;
   bool _loading = true;
+  bool _loadingLiveData = false;
   bool _onboarded = false;
   int _tabIndex = 0;
   ThemeMode _themeMode = ThemeMode.system;
   UserPreferences _preferences = const UserPreferences();
   AppUser? _currentUser;
   List<AppUser> _users = [];
-  final List<CheckIn> _checkIns = [];
+  List<CheckIn> _checkIns = [];
+  List<MatchFixture> _fixtures = mockFixtures;
+  List<PubSpot> _pubs = mockPubs;
+  String _liveDataMessage = 'Prototype data is ready. Live fixtures and OSM pubs will load automatically when network access is available.';
 
   @override
   void initState() {
     super.initState();
     _loadState();
+  }
+
+  @override
+  void dispose() {
+    _liveData.dispose();
+    super.dispose();
   }
 
   Future<void> _loadState() async {
@@ -55,6 +69,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
     final onboarded = user == null ? false : await _store.isOnboarded(userId: user.id);
     final prefs = user == null ? const UserPreferences() : await _store.loadPreferences(userId: user.id);
     final themeMode = await _store.loadThemeMode();
+    final checkIns = user == null ? <CheckIn>[] : await _store.loadCheckIns(userId: user.id);
     if (!mounted) return;
     setState(() {
       _users = users;
@@ -62,7 +77,36 @@ class _MatchPintAppState extends State<MatchPintApp> {
       _onboarded = onboarded;
       _preferences = prefs;
       _themeMode = themeMode;
+      _checkIns = checkIns;
       _loading = false;
+    });
+    _refreshLiveData();
+  }
+
+  Future<void> _refreshLiveData({double? latitude, double? longitude}) async {
+    if (_loadingLiveData) return;
+    if (mounted) {
+      setState(() {
+        _loadingLiveData = true;
+        _liveDataMessage = 'Loading live fixtures and nearby pubs...';
+      });
+    }
+
+    final fixtureResult = await _liveData.fetchFootballFixtures();
+    final lat = latitude ?? MatchPintLiveDataService.defaultLatitude;
+    final lng = longitude ?? MatchPintLiveDataService.defaultLongitude;
+    final pubResult = await _liveData.fetchNearbyPubs(
+      latitude: lat,
+      longitude: lng,
+      fixtures: fixtureResult.fixtures,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _fixtures = fixtureResult.fixtures;
+      _pubs = pubResult.pubs;
+      _loadingLiveData = false;
+      _liveDataMessage = '${fixtureResult.message} ${pubResult.message}';
     });
   }
 
@@ -96,6 +140,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
       _currentUser = user;
       _preferences = prefs;
       _onboarded = false;
+      _checkIns = [];
       _tabIndex = 0;
     });
   }
@@ -103,22 +148,73 @@ class _MatchPintAppState extends State<MatchPintApp> {
   Future<void> _loginUser(AppUser user) async {
     final prefs = await _store.loadPreferences(userId: user.id);
     final onboarded = await _store.isOnboarded(userId: user.id);
+    final checkIns = await _store.loadCheckIns(userId: user.id);
     await _store.setCurrentUser(user);
     if (!mounted) return;
     setState(() {
       _currentUser = user;
       _preferences = prefs;
       _onboarded = onboarded;
+      _checkIns = checkIns;
       _tabIndex = 0;
     });
   }
 
-  Future<void> _switchAccount() async {
+  Future<void> _updateCurrentUser(AppUser updated) async {
+    final users = _users.map((user) => user.id == updated.id ? updated : user).toList();
+    await _store.saveUsers(users);
+    await _store.setCurrentUser(updated);
+    if (!mounted) return;
+    setState(() {
+      _users = users;
+      _currentUser = updated;
+    });
+  }
+
+  Future<bool> _changeEmail(String currentPassword, String newEmail) async {
+    final user = _currentUser;
+    if (user == null) return false;
+    final cleanEmail = newEmail.trim().toLowerCase();
+    if (!user.matchesPassword(currentPassword) || !cleanEmail.contains('@')) return false;
+    final emailTaken = _users.any((u) => u.id != user.id && u.email.toLowerCase() == cleanEmail);
+    if (emailTaken) return false;
+    await _updateCurrentUser(user.copyWith(email: cleanEmail));
+    return true;
+  }
+
+  Future<bool> _changePassword(String currentPassword, String newPassword) async {
+    final user = _currentUser;
+    if (user == null) return false;
+    if (!user.matchesPassword(currentPassword) || newPassword.trim().length < 8) return false;
+    await _updateCurrentUser(user.copyWith(passwordHash: AppUser.hashPassword(newPassword)));
+    return true;
+  }
+
+  Future<bool> _deleteAccount(String currentPassword) async {
+    final user = _currentUser;
+    if (user == null || !user.matchesPassword(currentPassword)) return false;
+    final users = _users.where((u) => u.id != user.id).toList();
+    await _store.saveUsers(users);
+    await _store.deleteUserData(user.id);
+    await _store.setCurrentUser(null);
+    if (!mounted) return true;
+    setState(() {
+      _users = users;
+      _currentUser = null;
+      _onboarded = false;
+      _checkIns = [];
+      _tabIndex = 0;
+    });
+    return true;
+  }
+
+  Future<void> _signOut() async {
     await _store.setCurrentUser(null);
     if (!mounted) return;
     setState(() {
       _currentUser = null;
       _onboarded = false;
+      _checkIns = [];
       _tabIndex = 0;
     });
   }
@@ -129,19 +225,25 @@ class _MatchPintAppState extends State<MatchPintApp> {
     setState(() => _themeMode = mode);
   }
 
-  Future<void> _resetProfile() async {
-    await _store.setOnboarded(false, userId: _currentUser?.id);
+  Future<void> _saveCheckIn(CheckIn entry) async {
+    final updated = [..._checkIns, entry];
+    await _store.saveCheckIns(updated, userId: _currentUser?.id);
     if (!mounted) return;
-    setState(() => _onboarded = false);
+    setState(() => _checkIns = updated);
   }
 
+  NavigatorState? get _nav => _navigatorKey.currentState;
+
   void _openMatch(MatchFixture fixture) {
-    Navigator.of(context).push(MaterialPageRoute(
+    _nav?.push(MaterialPageRoute(
       builder: (_) => Scaffold(
         appBar: AppBar(title: Text(fixture.title)),
         body: PubListScreen(
           preferences: _preferences,
           fixture: fixture,
+          pubs: _pubs,
+          fixtures: _fixtures,
+          liveDataMessage: _liveDataMessage,
           onOpenPub: (pub) => _openPub(pub, fixture: fixture),
         ),
       ),
@@ -149,8 +251,8 @@ class _MatchPintAppState extends State<MatchPintApp> {
   }
 
   void _openPub(PubSpot pub, {MatchFixture? fixture}) {
-    final selectedFixture = fixture ?? mockFixtures.first;
-    Navigator.of(context).push(MaterialPageRoute(
+    final selectedFixture = fixture ?? bestFixtureForPub(pub, preferences: _preferences, fixtures: _fixtures);
+    _nav?.push(MaterialPageRoute(
       builder: (_) => PubDetailScreen(
         pub: pub,
         preferences: _preferences,
@@ -161,11 +263,11 @@ class _MatchPintAppState extends State<MatchPintApp> {
   }
 
   void _openMatchMode(PubSpot pub, MatchFixture fixture) {
-    Navigator.of(context).push(MaterialPageRoute(
+    _nav?.push(MaterialPageRoute(
       builder: (_) => MatchModeScreen(
         pub: pub,
         fixture: fixture,
-        onSave: (entry) => setState(() => _checkIns.add(entry)),
+        onSave: _saveCheckIn,
       ),
     ));
   }
@@ -173,6 +275,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'MatchPint',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
@@ -203,13 +306,24 @@ class _MatchPintAppState extends State<MatchPintApp> {
         children: [
           HomeScreen(
             preferences: _preferences,
+            fixtures: _fixtures,
+            pubs: _pubs,
+            liveDataMessage: _liveDataMessage,
+            loadingLiveData: _loadingLiveData,
+            onRefreshLiveData: _refreshLiveData,
             onOpenMatch: _openMatch,
             onOpenPub: (pub) => _openPub(pub),
             onShowMatches: () => setState(() => _tabIndex = 1),
             onShowPubs: () => setState(() => _tabIndex = 2),
           ),
-          MatchesScreen(onOpenMatch: _openMatch),
-          PubListScreen(preferences: _preferences, onOpenPub: (pub) => _openPub(pub)),
+          MatchesScreen(fixtures: _fixtures, liveDataMessage: _liveDataMessage, loadingLiveData: _loadingLiveData, onOpenMatch: _openMatch),
+          PubListScreen(
+            preferences: _preferences,
+            pubs: _pubs,
+            fixtures: _fixtures,
+            liveDataMessage: _liveDataMessage,
+            onOpenPub: (pub) => _openPub(pub),
+          ),
           HistoryScreen(checkIns: _checkIns),
           SettingsScreen(
             user: _currentUser!,
@@ -217,8 +331,11 @@ class _MatchPintAppState extends State<MatchPintApp> {
             onUpdatePreferences: _updatePreferences,
             themeMode: _themeMode,
             onSetThemeMode: _setThemeMode,
-            onSwitchAccount: _switchAccount,
-            onResetProfile: _resetProfile,
+            onUpdateUser: _updateCurrentUser,
+            onChangeEmail: _changeEmail,
+            onChangePassword: _changePassword,
+            onDeleteAccount: _deleteAccount,
+            onSignOut: _signOut,
           ),
         ],
       ),

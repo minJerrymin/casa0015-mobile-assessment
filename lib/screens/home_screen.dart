@@ -11,6 +11,11 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.preferences,
+    required this.fixtures,
+    required this.pubs,
+    required this.liveDataMessage,
+    required this.loadingLiveData,
+    required this.onRefreshLiveData,
     required this.onOpenMatch,
     required this.onOpenPub,
     required this.onShowMatches,
@@ -18,6 +23,11 @@ class HomeScreen extends StatelessWidget {
   });
 
   final UserPreferences preferences;
+  final List<MatchFixture> fixtures;
+  final List<PubSpot> pubs;
+  final String liveDataMessage;
+  final bool loadingLiveData;
+  final Future<void> Function({double? latitude, double? longitude}) onRefreshLiveData;
   final ValueChanged<MatchFixture> onOpenMatch;
   final ValueChanged<PubSpot> onOpenPub;
   final VoidCallback onShowMatches;
@@ -26,9 +36,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted = AppTheme.subtleText(context);
-    final heroMatch = mockFixtures.firstWhere((m) => m.homeTeam == preferences.team || m.awayTeam == preferences.team, orElse: () => mockFixtures.first);
-    final recommended = [...mockPubs]
-      ..sort((a, b) => b.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood).compareTo(a.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood)));
+    final fixtureSource = fixtures.isEmpty ? mockFixtures : fixtures;
+    final pubSource = pubs.isEmpty ? mockPubs : pubs;
+    final heroMatch = bestMatchForHome(preferences, fixtureSource);
+    final recommended = [...pubSource]
+      ..sort((a, b) => b
+          .comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood)
+          .compareTo(a.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood)));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
@@ -36,7 +50,13 @@ class HomeScreen extends StatelessWidget {
         Text('Tonight, find your screen.', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
         Text('Profile: ${preferences.team} • ${preferences.prefersCalm ? 'calm' : 'atmosphere'} • ${preferences.soloMode ? 'solo-friendly' : 'group-friendly'}', style: TextStyle(color: muted)),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        _LiveDataCard(
+          message: liveDataMessage,
+          loading: loadingLiveData,
+          onRefresh: () => onRefreshLiveData(),
+        ),
+        const SizedBox(height: 16),
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -74,18 +94,53 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 22),
         _SectionHeader(title: 'Upcoming matches', action: 'View all', onTap: onShowMatches),
         const SizedBox(height: 12),
-        ...mockFixtures.take(2).map((m) => Padding(
+        ...fixtureSource.take(2).map((m) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: MatchCard(fixture: m, onTap: () => onOpenMatch(m)),
             )),
         const SizedBox(height: 10),
         _SectionHeader(title: 'Recommended pubs', action: 'View all', onTap: onShowPubs),
         const SizedBox(height: 12),
-        ...recommended.take(2).map((p) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: PubCard(pub: p, preferences: preferences, onTap: () => onOpenPub(p)),
-            )),
+        ...recommended.take(2).map((p) {
+          final fixture = bestFixtureForPub(p, preferences: preferences, fixtures: fixtureSource);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: PubCard(
+              pub: p,
+              preferences: preferences,
+              matchLabel: fixture.title,
+              broadcastConfidence: fixtureBroadcastScore(p, fixture),
+              onTap: () => onOpenPub(p),
+            ),
+          );
+        }),
       ],
+    );
+  }
+}
+
+class _LiveDataCard extends StatelessWidget {
+  const _LiveDataCard({required this.message, required this.loading, required this.onRefresh});
+  final String message;
+  final bool loading;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            loading
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : Icon(Icons.cloud_done, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: TextStyle(fontSize: 12.5, color: AppTheme.subtleText(context), height: 1.35))),
+            IconButton(onPressed: loading ? null : onRefresh, icon: const Icon(Icons.refresh)),
+          ],
+        ),
+      ),
     );
   }
 }

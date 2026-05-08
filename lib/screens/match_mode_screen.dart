@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/check_in.dart';
 import '../models/match_fixture.dart';
 import '../models/pub_spot.dart';
-import '../services/mock_sensor_service.dart';
+import '../services/live_audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/metric_bar.dart';
 
@@ -16,38 +16,44 @@ class MatchModeScreen extends StatefulWidget {
 
   final PubSpot pub;
   final MatchFixture fixture;
-  final ValueChanged<CheckIn> onSave;
+  final Future<void> Function(CheckIn entry) onSave;
 
   @override
   State<MatchModeScreen> createState() => _MatchModeScreenState();
 }
 
 class _MatchModeScreenState extends State<MatchModeScreen> {
-  final MockSensorService _sensorService = MockSensorService();
+  final LiveAudioService _audioService = LiveAudioService();
   int _noiseDb = 0;
   bool _sampling = false;
-  String _mood = 'Good atmosphere';
+  String _sampleMessage = 'Tap the microphone button to take a live dB sample. No audio is saved.';
+  final Set<String> _selectedTags = {'Good atmosphere'};
   final TextEditingController _noteController = TextEditingController();
 
   Future<void> _sampleNoise() async {
-    setState(() => _sampling = true);
-    final value = await _sensorService.sampleNoiseDb(baseline: widget.pub.noiseDb);
+    setState(() {
+      _sampling = true;
+      _sampleMessage = 'Listening for a short live atmosphere sample...';
+    });
+    final sample = await _audioService.sampleNoiseDb(fallback: widget.pub.noiseDb);
     if (!mounted) return;
     setState(() {
-      _noiseDb = value;
+      _noiseDb = sample.db;
+      _sampleMessage = sample.message;
       _sampling = false;
     });
   }
 
-  void _save() {
-    widget.onSave(CheckIn(
+  Future<void> _save() async {
+    await widget.onSave(CheckIn(
       pubName: widget.pub.name,
       matchTitle: widget.fixture.title,
       timestamp: DateTime.now(),
-      mood: _mood,
+      mood: _selectedTags.isEmpty ? 'No tags selected' : _selectedTags.join(', '),
       noiseDb: _noiseDb == 0 ? widget.pub.noiseDb : _noiseDb,
       note: _noteController.text.trim().isEmpty ? 'No note added.' : _noteController.text.trim(),
     ));
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Match night saved to My Nights')));
     Navigator.pop(context);
   }
@@ -55,6 +61,7 @@ class _MatchModeScreenState extends State<MatchModeScreen> {
   @override
   void dispose() {
     _noteController.dispose();
+    _audioService.dispose();
     super.dispose();
   }
 
@@ -80,7 +87,7 @@ class _MatchModeScreenState extends State<MatchModeScreen> {
                   const SizedBox(height: 12),
                   Text('$liveNoise dB', style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
-                  Text(_noiseDb == 0 ? 'Typical venue noise estimate' : 'Latest match-mode sample', style: TextStyle(color: muted)),
+                  Text(_noiseDb == 0 ? 'Typical venue noise estimate' : 'Latest live microphone sample', style: TextStyle(color: muted)),
                   const SizedBox(height: 18),
                   MetricBar(label: 'Atmosphere intensity', value: liveNoise, trailing: liveNoise > 72 ? 'loud' : 'comfortable'),
                   const SizedBox(height: 14),
@@ -88,10 +95,12 @@ class _MatchModeScreenState extends State<MatchModeScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       icon: _sampling ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.mic),
-                      label: Text(_sampling ? 'Sampling atmosphere...' : 'Sample noise level'),
+                      label: Text(_sampling ? 'Sampling atmosphere...' : 'Sample live noise'),
                       onPressed: _sampling ? null : _sampleNoise,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Text(_sampleMessage, textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 12, height: 1.35)),
                 ],
               ),
             ),
@@ -102,8 +111,19 @@ class _MatchModeScreenState extends State<MatchModeScreen> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: ['Great crowd', 'Good atmosphere', 'Too loud', 'Perfect for solo', 'Would return'].map((mood) {
-              return ChoiceChip(label: Text(mood), selected: _mood == mood, onSelected: (_) => setState(() => _mood = mood));
+            children: ['Great crowd', 'Good atmosphere', 'Too loud', 'Perfect for solo', 'Would return'].map((tag) {
+              final selected = _selectedTags.contains(tag);
+              return FilterChip(
+                label: Text(tag),
+                selected: selected,
+                onSelected: (value) => setState(() {
+                  if (value) {
+                    _selectedTags.add(tag);
+                  } else {
+                    _selectedTags.remove(tag);
+                  }
+                }),
+              );
             }).toList(),
           ),
           const SizedBox(height: 20),
@@ -118,7 +138,7 @@ class _MatchModeScreenState extends State<MatchModeScreen> {
           const SizedBox(height: 20),
           FilledButton.icon(icon: const Icon(Icons.bookmark_add), label: const Text('Save match night'), onPressed: _save),
           const SizedBox(height: 8),
-          Text('V0.2 still uses a mock sensor sampler. V0.3 will replace this with Android microphone amplitude once device permissions are configured.', style: TextStyle(color: muted, fontSize: 12, height: 1.35)),
+          Text('Privacy note: MatchPint uses the microphone only for a short amplitude sample. It deletes the temporary recording and saves only the dB estimate with your match-night note.', style: TextStyle(color: muted, fontSize: 12, height: 1.35)),
         ],
       ),
     );

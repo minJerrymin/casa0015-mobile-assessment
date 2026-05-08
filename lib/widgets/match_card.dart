@@ -42,8 +42,6 @@ class MatchCard extends StatelessWidget {
                     Text(fixture.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text('${fixture.competition} • ${_formatKickoff(fixture.kickoff)}', style: TextStyle(color: muted)),
-                    const SizedBox(height: 8),
-                    Text('Tap to see pubs for this match', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12.5, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),

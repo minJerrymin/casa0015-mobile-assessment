@@ -51,10 +51,14 @@ class HistoryScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text('${entry.pubName} • ${_format(entry.timestamp)}', style: TextStyle(color: muted)),
                         const SizedBox(height: 12),
-                        Wrap(spacing: 8, children: [
-                          Chip(label: Text(entry.mood)),
-                          Chip(label: Text('${entry.noiseDb} dB')),
-                        ]),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ...entry.mood.split(',').map((tag) => Chip(label: Text(tag.trim()))),
+                            Chip(label: Text('${entry.noiseDb} dB')),
+                          ],
+                        ),
                         const SizedBox(height: 10),
                         Text(entry.note),
                       ],

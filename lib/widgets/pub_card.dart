@@ -10,15 +10,22 @@ class PubCard extends StatelessWidget {
     required this.pub,
     required this.preferences,
     required this.onTap,
+    this.distanceKmOverride,
+    this.matchLabel,
+    this.broadcastConfidence,
   });
 
   final PubSpot pub;
   final UserPreferences preferences;
   final VoidCallback onTap;
+  final double? distanceKmOverride;
+  final String? matchLabel;
+  final int? broadcastConfidence;
 
   @override
   Widget build(BuildContext context) {
     final muted = AppTheme.subtleText(context);
+    final distance = distanceKmOverride ?? pub.distanceKm;
     final score = pub.comfortScore(
       prefersCalm: preferences.prefersCalm,
       soloMode: preferences.soloMode,
@@ -41,13 +48,37 @@ class PubCard extends StatelessWidget {
                       children: [
                         Text(pub.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 4),
-                        Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away', style: TextStyle(color: muted)),
+                        Text('${pub.area} • ${distance.toStringAsFixed(1)} km away', style: TextStyle(color: muted)),
                       ],
                     ),
                   ),
                   ScorePill(score: score, label: 'fit'),
                 ],
               ),
+              if (matchLabel != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.live_tv, size: 15, color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          broadcastConfidence == null ? 'Showing: $matchLabel' : 'Showing: $matchLabel • $broadcastConfidence% confidence',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               Text(pub.description, style: const TextStyle(height: 1.35)),
               const SizedBox(height: 14),
@@ -59,14 +90,6 @@ class PubCard extends StatelessWidget {
                   _Tag(icon: Icons.people, label: '${pub.crowdLevel}% crowd'),
                   _Tag(icon: Icons.tv, label: '${pub.screenQuality}% screens'),
                   if (pub.soloFriendly) const _Tag(icon: Icons.person, label: 'solo-friendly'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text('Tap for venue details and match mode', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 12.5)),
                 ],
               ),
             ],

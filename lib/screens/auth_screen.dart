@@ -30,14 +30,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    // Existing users should see a return-user flow first. A commercial app
-    // should keep a valid session and only ask for credentials after sign-out.
     _registerMode = widget.savedUsers.isEmpty;
-    if (widget.savedUsers.isNotEmpty) {
-      final lastUser = widget.savedUsers.last;
-      _nameController.text = lastUser.displayName;
-      _emailController.text = lastUser.email;
-    }
   }
 
   @override
@@ -53,15 +46,19 @@ class _AuthScreenState extends State<AuthScreen> {
     final name = _nameController.text.trim().isEmpty ? 'MatchPint Fan' : _nameController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (!email.contains('@') || password.length < 6) {
-      setState(() => _error = 'Use an email address and a password with at least 6 characters.');
+    if (!email.contains('@') || email.length < 5) {
+      setState(() => _error = 'Enter a valid email address.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _error = 'Use at least 8 characters for your password.');
       return;
     }
 
     final existing = widget.savedUsers.where((u) => u.email.toLowerCase() == email).toList();
     if (_registerMode) {
       if (existing.isNotEmpty) {
-        setState(() => _error = 'This account already exists locally. Use sign in or switch account.');
+        setState(() => _error = 'This account already exists. Sign in instead.');
         return;
       }
       final user = AppUser(
@@ -69,14 +66,20 @@ class _AuthScreenState extends State<AuthScreen> {
         email: email,
         displayName: name,
         createdAt: DateTime.now(),
+        passwordHash: AppUser.hashPassword(password),
       );
       widget.onRegister(user);
     } else {
       if (existing.isEmpty) {
-        setState(() => _error = 'No local account found. Create one first for this prototype build.');
+        setState(() => _error = 'No account found for this email on this prototype build.');
         return;
       }
-      widget.onLogin(existing.first);
+      final user = existing.first;
+      if (!user.matchesPassword(password)) {
+        setState(() => _error = 'Incorrect password.');
+        return;
+      }
+      widget.onLogin(user);
     }
   }
 
@@ -90,12 +93,12 @@ class _AuthScreenState extends State<AuthScreen> {
           children: [
             const Center(child: MatchPintLogo(size: 112, showText: true)),
             const SizedBox(height: 34),
-            Text(_registerMode ? 'Create your matchday account' : 'Welcome back', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+            Text(_registerMode ? 'Create your matchday account' : 'Sign in to MatchPint', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             Text(
-              widget.savedUsers.isEmpty
-                  ? 'Create a local prototype account once. MatchPint will keep you signed in on this device until you choose switch account.'
-                  : 'You should only see this screen after signing out or switching account. Normal app launches now restore the active session automatically.',
+              _registerMode
+                  ? 'Create one account for your match nights, pub preferences, and saved experiences.'
+                  : 'Normal launches restore your active session. You only see this after signing out, deleting an account, or clearing app data.',
               style: TextStyle(color: muted, height: 1.35),
             ),
             const SizedBox(height: 22),
@@ -142,26 +145,16 @@ class _AuthScreenState extends State<AuthScreen> {
               label: Text(_registerMode ? 'Create account' : 'Sign in'),
               onPressed: _submit,
             ),
-            if (widget.savedUsers.isNotEmpty) ...[
-              const SizedBox(height: 26),
-              Text('Switch account', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 10),
-              ...widget.savedUsers.reversed.map((user) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.16),
-                          child: Text(user.displayName.isNotEmpty ? user.displayName.substring(0, 1).toUpperCase() : '?'),
-                        ),
-                        title: Text(user.displayName),
-                        subtitle: Text(user.email, style: TextStyle(color: muted)),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => widget.onLogin(user),
-                      ),
-                    ),
-                  )),
-            ],
+            const SizedBox(height: 22),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Prototype security note: this build stores a local password hash only to test account UX. Production should use Firebase Authentication, email verification, password reset, and secure tokens.',
+                  style: TextStyle(color: muted, height: 1.35),
+                ),
+              ),
+            ),
           ],
         ),
       ),

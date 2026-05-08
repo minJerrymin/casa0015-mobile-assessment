@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/mock_data.dart';
 import '../models/match_fixture.dart';
 import '../models/pub_spot.dart';
 import '../models/user_preferences.dart';
@@ -46,6 +47,31 @@ class PubDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('${pub.area} • ${pub.distanceKm.toStringAsFixed(1)} km away • ${pub.vibe}', style: TextStyle(color: muted)),
+          if (fixture != null) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.live_tv, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Tonight’s screen', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 4),
+                          Text(fixture!.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          Text('Prototype broadcast confidence: ${fixtureBroadcastScore(pub, fixture!)}%', style: TextStyle(color: muted, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(pub.description, style: const TextStyle(height: 1.4)),
           const SizedBox(height: 22),
@@ -72,7 +98,7 @@ class PubDetailScreen extends StatelessWidget {
           const SizedBox(height: 28),
           FilledButton.icon(
             icon: const Icon(Icons.play_arrow),
-            label: Text(fixture == null ? 'Start match mode' : 'Start match mode for ${fixture!.homeTeam}'),
+            label: Text(fixture == null ? 'Start match mode' : 'Start match mode for ${fixture!.title}'),
             onPressed: onStartMatchMode,
           ),
         ],

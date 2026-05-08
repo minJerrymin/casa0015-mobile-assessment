@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_user.dart';
+import '../models/check_in.dart';
 import '../models/user_preferences.dart';
 
 class LocalStore {
@@ -15,12 +16,14 @@ class LocalStore {
   static const String _usersKey = 'matchpint.users';
   static const String _currentUserKey = 'matchpint.currentUserId';
   static const String _themeModeKey = 'matchpint.themeMode';
+  static const String _legacyCheckInsKey = 'matchpint.checkIns';
 
   String _userOnboardedKey(String userId) => 'matchpint.users.$userId.onboarded';
   String _userTeamKey(String userId) => 'matchpint.users.$userId.preferences.team';
   String _userCalmKey(String userId) => 'matchpint.users.$userId.preferences.prefersCalm';
   String _userSoloKey(String userId) => 'matchpint.users.$userId.preferences.soloMode';
   String _userFoodKey(String userId) => 'matchpint.users.$userId.preferences.wantsFood';
+  String _userCheckInsKey(String userId) => 'matchpint.users.$userId.checkIns';
 
   Future<bool> isOnboarded({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
@@ -107,6 +110,39 @@ class LocalStore {
     } else {
       await prefs.setString(_currentUserKey, user.id);
     }
+  }
+
+  Future<void> deleteUserData(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userOnboardedKey(userId));
+    await prefs.remove(_userTeamKey(userId));
+    await prefs.remove(_userCalmKey(userId));
+    await prefs.remove(_userSoloKey(userId));
+    await prefs.remove(_userFoodKey(userId));
+    await prefs.remove(_userCheckInsKey(userId));
+    if (prefs.getString(_currentUserKey) == userId) {
+      await prefs.remove(_currentUserKey);
+    }
+  }
+
+  Future<List<CheckIn>> loadCheckIns({String? userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(userId == null ? _legacyCheckInsKey : _userCheckInsKey(userId));
+    if (raw == null || raw.trim().isEmpty) return [];
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded.map((item) => CheckIn.fromJson(item as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveCheckIns(List<CheckIn> checkIns, {String? userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      userId == null ? _legacyCheckInsKey : _userCheckInsKey(userId),
+      jsonEncode(checkIns.map((entry) => entry.toJson()).toList()),
+    );
   }
 
   Future<ThemeMode> loadThemeMode() async {
