@@ -1,0 +1,68 @@
+name: Build APK and create release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Android release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyse project
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Prepare APK asset
+        shell: bash
+        run: |
+          VERSION_NAME="${GITHUB_REF_NAME:-manual-build}"
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk "release/MatchPint-${VERSION_NAME}.apk"
+          ls -lh release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchpint-release-apk
+          path: release/*.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MatchPint ${{ github.ref_name }}
+          body: |
+            MatchPint Android APK release for CASA0015 Mobile Systems and Interactions.
+
+            Download the APK asset below and install it on an Android device.
+          files: release/*.apk

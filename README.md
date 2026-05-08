@@ -48,25 +48,25 @@ The app includes authentication, onboarding, user preferences, theme settings an
 
 ## Screenshots and demo media
 
-Final screenshots and the presentation demo video should be added to the repository before submission/presentation. Recommended locations:
+The app screenshots are mirrored into `docs/screenshots/` so the README and GitHub Pages landing page can reference the same final media assets.
+
+| Login and register | Onboarding | Home |
+|---|---|---|
+| ![Login and register screen](docs/screenshots/01-login-register.jpg) | ![Onboarding screen](docs/screenshots/02-onboarding.jpg) | ![Home screen](docs/screenshots/03-home.jpg) |
+
+| Matches | Pub search | Pub detail |
+|---|---|---|
+| ![Matches screen](docs/screenshots/04-matches.jpg) | ![Pubs search screen](docs/screenshots/05-pubs-search.jpg) | ![Pub detail screen](docs/screenshots/06-pub-detail.jpg) |
+
+| Map | Experience record | Settings |
+|---|---|---|
+| ![Map screen](docs/screenshots/07-map.jpg) | ![Experience record screen](docs/screenshots/08-experience-record.jpg) | ![Settings screen](docs/screenshots/09-settings.jpg) |
+
+A short demo video/GIF can be added at:
 
 ```text
-docs/screenshots/home.png
-docs/screenshots/matches.png
-docs/screenshots/pubs.png
-docs/screenshots/pub-detail.png
-docs/screenshots/match-mode.png
 docs/demo/matchpint-demo.mp4
 ```
-
-Suggested README screenshot set:
-
-1. Splash / onboarding
-2. Home screen
-3. Matches screen
-4. Recommended pubs screen
-5. Pub detail screen
-6. Match mode / saved night screen
 
 ---
 
