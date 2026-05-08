@@ -1,46 +1,45 @@
 <!---
 
 ---
-title: "CASA0017: Web Architecture Final Assessment"
-author: "Steven Gray"
-date: "10 Dec 2021"
+title: "CASA0015: Mobile Systems and Interactions Final Assessment"
+author: "Tianrui Min"
+date: "08 May 2026"
 ---
 
 -->
 
-# Submission Guide
 
-You will need to edit this file, create a PDF using the instructions below, from this file.   Sign it digitally and upload to Moodle
-
-## How to create a PDF from Markdown
-When finished you should export to PDF using VSCode and MarkdownPDF Extension. Make sure you select no headers and no footers in the
-extension preferences before exporting to PDF.   
-
-Upload this PDF into Moodle for submission including a copy of your presentation slides.
 
 ## Link to GitHub Repository
 
-Flutter Application Name - MY APPLICATION NAME
-GitHub Repository - [https://github.com/ucl-casa-ce/casa0015-mobile-assessment](https://github.com/ucl-casa-ce/casa0015-mobile-assessment)
+Flutter Application Name - MatchPint
+GitHub Repository - [https://github.com/YOUR-USERNAME/matchpint](https://github.com/YOUR-USERNAME/matchpint)
 
 ## Introduction to Application
 
-A brief 200 word explanation of your application and it's use.  Below create a Bibliography to code, tutorial, or plugins you've used in the project. Use this guide
-for citation - [https://www.scribbr.co.uk/referencing/harvard-website-reference/](https://www.scribbr.co.uk/referencing/harvard-website-reference/)
+MatchPint is a Flutter mobile application designed to help football fans in London plan better match-day social experiences by connecting upcoming fixtures with suitable nearby pubs. The app addresses a common urban problem: fans often know which match they want to watch, but do not know which pubs are likely to show it, how close those pubs are, or whether the venue fits the atmosphere they want. MatchPint begins with the match rather than the venue, allowing users to browse fixtures, select a game, and receive recommended pubs based on location, sport-related tags, map information, and user comments. The application includes multiple views, including onboarding/home, match discovery, recommended pubs, pub detail pages, saved match-night planning, and settings. It uses mobile interaction patterns such as cards, bottom navigation, filters, maps, location-based discovery, and comment-based experience feedback to create a clear user journey. The project fits the Connected Environments theme by linking the user’s physical context, especially location, with live urban leisure spaces and digital information about football viewing. The final version focuses on a clean, useful, and repeatable experience: users can choose an area, start with a match, compare pubs, and decide where to watch.
 
-## Biblography
+## Bibliography
 
-1. Last name, First initial. (Year published). Title. Edition. (Only include the edition if it is not the first edition) City published: Publisher, Page(s). <http://google.com>
+1. Flutter. (2026). *Flutter documentation*. Available at: <https://docs.flutter.dev/> (Accessed: 8 May 2026).
 
-2. Last name, First initial. (Year published). Title. Edition. (Only include the edition if it is not the first edition) City published: Publisher, Page(s).  <http://google.com>
+2. Dart. (2026). *Dart documentation*. Available at: <https://dart.dev/guides> (Accessed: 8 May 2026).
+
+3. Flutter Team. (2026). *Material Design widgets*. Available at: <https://docs.flutter.dev/ui/widgets/material> (Accessed: 8 May 2026).
+
+4. Baseflow. (2026). *geolocator: Flutter Geolocator Plugin*. Available at: <https://pub.dev/packages/geolocator> (Accessed: 8 May 2026).
+
+5. Flutter Community. (2026). *url_launcher: Flutter plugin for launching URLs*. Available at: <https://pub.dev/packages/url_launcher> (Accessed: 8 May 2026).
+
+6. OpenStreetMap contributors. (2026). *OpenStreetMap*. Available at: <https://www.openstreetmap.org/> (Accessed: 8 May 2026).
 
 ----
 
 ## Declaration of Authorship
 
-We, AUTHORS NAME HERE, confirm that the work presented in this assessment is my own. Where information has been derived from other sources, I confirm that this has been indicated in the work.
+I, Tianrui Min, confirm that the work presented in this assessment is my own. Where information has been derived from other sources, I confirm that this has been indicated in the work.
 
 
-Digitally Sign with Your name Here
+Digitally Sign with Your name Here: Tianrui Min
 
-ASSESSMENT DATE
+ASSESSMENT DATE: 08/05/2026
