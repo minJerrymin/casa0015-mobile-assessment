@@ -114,9 +114,15 @@ Users can add a comment for a pub and match, including whether the pub is showin
 
 These reports contribute to a Firestore-backed venue summary when Firebase is available.
 
-### 7. Save a match-night experience
+### 7. Sample the live atmosphere with the microphone
 
-After choosing a pub and fixture, users can save a match-night record. This creates a lightweight "passport" of past football-watching experiences.
+In **Match mode**, users can tap the microphone button to take a short live noise sample. MatchPint turns this into an estimated dB value so the user can record whether the pub atmosphere is calm, comfortable or loud.
+
+The app uses this as a lightweight environmental sensing feature: it helps describe the real match-night atmosphere without saving raw audio.
+
+### 8. Save a match-night experience
+
+After choosing a pub and fixture, users can save a match-night record. This creates a lightweight "passport" of past football-watching experiences, including venue tags, notes and the latest dB estimate.
 
 ---
 
@@ -164,13 +170,19 @@ Users can submit match-specific venue comments. When Firebase is available, thes
 
 Users can save match-night experiences, giving the app a sense of continuity rather than being a one-off search tool.
 
+### Live dB atmosphere sampling
+
+MatchPint uses the phone microphone in Match mode to sample the venue atmosphere and estimate a live dB value. This supports the app's goal of describing not only where a pub is, but what it feels like during a match.
+
+Raw audio is not saved; only the estimated noise level is used as part of the match-night record and venue feedback.
+
 ---
 
 ## Connected Environments concept
 
 MatchPint treats the city as a connected match-day environment.
 
-The app links digital match information with physical pub spaces, mobile location, maps, user preferences and community feedback. In this sense, the app is not only a pub directory. It is a small connected system that helps users interpret urban leisure spaces through the context of live football.
+The app links digital match information with physical pub spaces, mobile location, maps, microphone-based atmosphere sensing, user preferences and community feedback. In this sense, the app is not only a pub directory. It is a small connected system that helps users interpret urban leisure spaces through the context of live football.
 
 The project explores how mobile systems can support decisions that happen between online information and real-world social places.
 
@@ -180,6 +192,7 @@ The project explores how mobile systems can support decisions that happen betwee
 
 - Firebase Authentication is used for account registration and login when the released APK is configured correctly.
 - Firestore is used for venue comments and aggregated pub-match reports.
+- The microphone is used in Match mode to estimate live noise level in dB; raw audio is not stored.
 - Some app content uses fallback/mock data so the prototype remains usable even when live services are unavailable.
 - Preferences and saved match-night records are stored locally on the device in this prototype.
 - If the app is uninstalled, local-only preferences and saved records may be removed by Android.
@@ -197,6 +210,7 @@ Key technologies used in the prototype include:
 | Mobile framework | Flutter / Dart |
 | Authentication | Firebase Authentication |
 | Cloud comments | Cloud Firestore |
+| Live atmosphere sensing | Microphone sampling through the Record package |
 | Local persistence | Shared Preferences |
 | Location | Geolocator |
 | Maps | Flutter Map and LatLong2 |
@@ -218,6 +232,7 @@ With more development time, MatchPint could be improved through:
 - push notifications for upcoming fixtures and saved match nights.
 
 ---
+
 
 ## GitHub Pages landing page
 
