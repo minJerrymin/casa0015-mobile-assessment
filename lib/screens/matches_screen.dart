@@ -28,15 +28,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['All', 'Premier League', 'Women’s football', 'London'];
+    final filters = ['All', 'Premier League', 'Champions League', 'Europa League'];
     final source = widget.fixtures.isEmpty ? mockFixtures : widget.fixtures;
     final matches = source.where((match) {
       final q = _query.trim().toLowerCase();
       final matchesQuery = q.isEmpty || match.title.toLowerCase().contains(q) || match.competition.toLowerCase().contains(q) || match.venue.toLowerCase().contains(q);
       if (!matchesQuery) return false;
       if (_filter == 'All') return true;
-      if (_filter == 'Women’s football') return match.title.toLowerCase().contains('women') || match.competition.toLowerCase().contains('women');
-      if (_filter == 'London') return ['Arsenal', 'Chelsea', 'Tottenham', 'West Ham', 'Crystal Palace', 'Brentford', 'Fulham'].any(match.title.contains);
       return match.competition.toLowerCase().contains(_filter.toLowerCase());
     }).toList();
 

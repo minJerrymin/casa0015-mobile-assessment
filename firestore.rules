@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /matchpint_cache/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /matchpint_venue_reports/{reportId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.pubId is string
+        && request.resource.data.fixtureId is string
+        && request.resource.data.isShowingMatch is bool;
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Public aggregate summaries power the commercial-facing recommendation layer.
+    // For this coursework build the signed-in app can update these when a report is submitted.
+    // A later production build should move aggregate writes into a Cloud Function trigger.
+    match /matchpint_report_aggregates/{aggregateId} {
+      allow read: if true;
+      allow create, update: if signedIn();
+      allow delete: if false;
+    }
+  }
+}

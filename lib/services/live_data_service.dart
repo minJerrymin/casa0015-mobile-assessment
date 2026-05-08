@@ -41,9 +41,107 @@ class MatchPintLiveDataService {
 
   MatchPintLiveDataService({http.Client? client}) : _client = client ?? http.Client();
 
+  static const String fixtureBackendUrl = String.fromEnvironment(
+    'MATCHPINT_FIXTURE_BACKEND_URL',
+    defaultValue: '',
+  );
+
   Future<LiveFixtureResult> fetchFootballFixtures() async {
+    final endpoint = fixtureBackendUrl.trim();
+    if (endpoint.isNotEmpty) {
+      try {
+        final result = await _fetchFixturesFromMatchPintBackend(Uri.parse(endpoint));
+        if (result.fixtures.isNotEmpty) return result;
+      } catch (_) {
+        // Do not expose developer-style API errors in the customer UI.
+        // Fall back to the latest available public/fallback data below.
+      }
+    }
+
+    final fallback = await _fetchFallbackFootballFixtures();
+    return LiveFixtureResult(
+      fixtures: fallback.fixtures,
+      live: fallback.live,
+      message: endpoint.isEmpty
+          ? 'Showing latest available fixtures. MatchPint backend URL will be bundled into the release APK.'
+          : 'Showing latest available fixtures while MatchPint refreshes the live service.',
+    );
+  }
+
+  Future<LiveFixtureResult> _fetchFixturesFromMatchPintBackend(Uri uri) async {
+    final response = await _client.get(uri).timeout(const Duration(seconds: 6));
+    if (response.statusCode != 200) {
+      throw Exception('MatchPint backend HTTP ${response.statusCode}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) throw Exception('Invalid backend payload');
+    final rawFixtures = decoded['fixtures'];
+    if (rawFixtures is! List) throw Exception('Backend fixtures missing');
+
+    final fixtures = <MatchFixture>[];
+    for (final item in rawFixtures) {
+      if (item is Map<String, dynamic>) {
+        final fixture = _fixtureFromBackendJson(item);
+        if (fixture != null) fixtures.add(fixture);
+      }
+    }
+
+    final filteredFixtures = _nextThreeDayFixtures(fixtures);
+    final generatedAt = (decoded['generatedAt'] ?? '').toString();
+    final rangeLabel = (decoded['rangeLabel'] ?? 'next 3 days').toString();
+    final source = (decoded['source'] ?? 'MatchPint Firebase backend').toString();
+    final counts = decoded['competitionCounts'];
+    final countMessage = counts is Map<String, dynamic>
+        ? counts.entries.map((entry) => '${entry.key}: ${entry.value}').join(' • ')
+        : '${filteredFixtures.length} fixtures';
+
+    return LiveFixtureResult(
+      fixtures: filteredFixtures,
+      live: true,
+      message: 'Live fixtures loaded from $source for $rangeLabel. $countMessage${generatedAt.isEmpty ? '' : ' • Updated $generatedAt'}',
+    );
+  }
+
+  MatchFixture? _fixtureFromBackendJson(Map<String, dynamic> item) {
+    final id = (item['id'] ?? '').toString();
+    final home = _cleanTeamName((item['homeTeam'] ?? '').toString());
+    final away = _cleanTeamName((item['awayTeam'] ?? '').toString());
+    final competition = (item['competition'] ?? '').toString();
+    final kickoffRaw = (item['kickoff'] ?? '').toString();
+    if (id.isEmpty || home.isEmpty || away.isEmpty || competition.isEmpty || kickoffRaw.isEmpty) {
+      return null;
+    }
+    final kickoff = DateTime.tryParse(kickoffRaw)?.toLocal();
+    if (kickoff == null) return null;
+    final venue = (item['venue'] ?? 'Venue TBC').toString();
+    final importanceRaw = item['importance'];
+    final importance = importanceRaw is num ? importanceRaw.toInt() : _fixtureImportance(competition, home, away);
+
+    return MatchFixture(
+      id: id,
+      homeTeam: home,
+      awayTeam: away,
+      competition: competition,
+      kickoff: kickoff,
+      venue: venue,
+      importance: importance.clamp(0, 100).toInt(),
+    );
+  }
+
+  List<MatchFixture> _nextThreeDayFixtures(List<MatchFixture> fixtures) {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(hours: 2));
+    final end = DateTime(now.year, now.month, now.day).add(const Duration(days: 4));
+    final filtered = fixtures
+        .where((fixture) => fixture.kickoff.isAfter(start) && fixture.kickoff.isBefore(end))
+        .toList()
+      ..sort((a, b) => a.kickoff.compareTo(b.kickoff));
+    return filtered;
+  }
+
+  Future<LiveFixtureResult> _fetchFallbackFootballFixtures() async {
     final List<_LeagueSource> leagues = const [
-      _LeagueSource(id: '4328', fallbackName: 'English Premier League'),
       _LeagueSource(id: '4480', fallbackName: 'UEFA Champions League'),
       _LeagueSource(id: '4481', fallbackName: 'UEFA Europa League'),
     ];
@@ -51,6 +149,25 @@ class MatchPintLiveDataService {
     final List<MatchFixture> fixtures = [];
     final List<String> failures = [];
     final seasons = _seasonCandidates();
+
+    try {
+      final eplFixtures = await _fetchFixtureDownloadFixtures(
+        Uri.parse('https://fixturedownload.com/feed/json/epl-2025'),
+        competition: 'English Premier League',
+        idPrefix: 'fd_epl',
+      );
+      fixtures.addAll(eplFixtures);
+      if (eplFixtures.isEmpty) failures.add('Premier League FixtureDownload: no events returned');
+    } catch (error) {
+      failures.add('Premier League FixtureDownload: ${error.runtimeType}');
+      try {
+        final events = await _fetchSportsDbEvents(Uri.parse('https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4328'));
+        for (final raw in events) {
+          final fixture = _fixtureFromSportsDbEvent(raw, fallbackCompetition: 'English Premier League');
+          if (fixture != null) fixtures.add(fixture);
+        }
+      } catch (_) {}
+    }
 
     for (final league in leagues) {
       var leagueLoaded = 0;
@@ -85,12 +202,8 @@ class MatchPintLiveDataService {
       if (leagueLoaded == 0) failures.add('${league.fallbackName}: no events returned');
     }
 
-    final now = DateTime.now();
     fixtures.sort((a, b) => a.kickoff.compareTo(b.kickoff));
-    final deduped = _dedupeFixtures(fixtures)
-        .where((fixture) => fixture.kickoff.isAfter(now.subtract(const Duration(hours: 12))))
-        .take(90)
-        .toList();
+    final deduped = _nextThreeDayFixtures(_dedupeFixtures(fixtures));
 
     if (deduped.isEmpty) {
       return LiveFixtureResult(
@@ -104,7 +217,7 @@ class MatchPintLiveDataService {
     return LiveFixtureResult(
       fixtures: deduped,
       live: true,
-      message: 'Live fixtures loaded from TheSportsDB: Premier League, Champions League, and Europa League.$skipped',
+      message: 'Showing the latest available next-3-day fixtures from fallback public feeds while MatchPint refreshes the live backend.$skipped',
     );
   }
 
@@ -115,7 +228,7 @@ class MatchPintLiveDataService {
     int radiusMeters = defaultRadiusMeters,
   }) async {
     final query = '''
-[out:json][timeout:30];
+[out:json][timeout:12];
 (
   node["amenity"="pub"](around:$radiusMeters,$latitude,$longitude);
   node["amenity"="bar"](around:$radiusMeters,$latitude,$longitude);
@@ -128,7 +241,7 @@ out center tags 80;
 ''';
 
     try {
-      final response = await _postOverpassQuery(query).timeout(const Duration(seconds: 24));
+      final response = await _postOverpassQuery(query).timeout(const Duration(seconds: 9));
 
       if (response.statusCode != 200) {
         return LivePubResult(
@@ -204,7 +317,7 @@ out center tags 80;
               },
               body: {'data': query},
             )
-            .timeout(const Duration(seconds: 18));
+            .timeout(const Duration(seconds: 7));
         if (response.statusCode == 200) return response;
         lastError = 'HTTP ${response.statusCode}';
       } catch (error) {
@@ -214,8 +327,60 @@ out center tags 80;
     throw Exception('All Overpass endpoints failed: $lastError');
   }
 
+
+  Future<List<MatchFixture>> _fetchFixtureDownloadFixtures(Uri uri, {required String competition, required String idPrefix}) async {
+    final response = await _client.get(uri).timeout(const Duration(seconds: 7));
+    if (response.statusCode != 200) throw Exception('HTTP ${response.statusCode}');
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) return const [];
+    final fixtures = <MatchFixture>[];
+    for (final item in decoded) {
+      if (item is Map<String, dynamic>) {
+        final fixture = _fixtureFromFixtureDownload(item, competition: competition, idPrefix: idPrefix);
+        if (fixture != null) fixtures.add(fixture);
+      }
+    }
+    return fixtures;
+  }
+
+  MatchFixture? _fixtureFromFixtureDownload(Map<String, dynamic> item, {required String competition, required String idPrefix}) {
+    final matchNumber = (item['MatchNumber'] ?? '').toString();
+    final home = _normaliseFixtureDownloadTeam((item['HomeTeam'] ?? '').toString());
+    final away = _normaliseFixtureDownloadTeam((item['AwayTeam'] ?? '').toString());
+    final dateRaw = (item['DateUtc'] ?? '').toString().trim();
+    if (matchNumber.isEmpty || home.isEmpty || away.isEmpty || dateRaw.isEmpty) return null;
+    final kickoff = DateTime.tryParse(dateRaw.replaceFirst(' ', 'T'))?.toLocal() ?? DateTime.now().add(const Duration(days: 7));
+    final venue = (item['Location'] ?? 'Venue TBC').toString();
+    return MatchFixture(
+      id: '${idPrefix}_$matchNumber',
+      homeTeam: home,
+      awayTeam: away,
+      competition: competition,
+      kickoff: kickoff,
+      venue: venue,
+      importance: _fixtureImportance(competition, home, away),
+    );
+  }
+
+  String _normaliseFixtureDownloadTeam(String raw) {
+    final cleaned = raw.trim();
+    const names = {
+      'Spurs': 'Tottenham Hotspur',
+      'Wolves': 'Wolverhampton Wanderers',
+      'Man City': 'Manchester City',
+      'Man Utd': 'Manchester United',
+      'Nott\'m Forest': 'Nottingham Forest',
+      'Brighton': 'Brighton and Hove Albion',
+      'Newcastle': 'Newcastle United',
+      'West Ham': 'West Ham United',
+      'Leeds': 'Leeds United',
+      'Burnley': 'Burnley',
+    };
+    return names[cleaned] ?? cleaned;
+  }
+
   Future<List<Map<String, dynamic>>> _fetchSportsDbEvents(Uri uri) async {
-    final response = await _client.get(uri).timeout(const Duration(seconds: 12));
+    final response = await _client.get(uri).timeout(const Duration(seconds: 7));
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');
     }
@@ -263,6 +428,8 @@ out center tags 80;
   int _fixtureImportance(String competition, String home, String away) {
     var score = 72;
     final lower = competition.toLowerCase();
+    if (lower.contains('champions')) score += 26;
+    if (lower.contains('europa')) score += 20;
     if (lower.contains('premier')) score += 18;
     if (lower.contains('women')) score += 12;
     const majorTeams = ['arsenal', 'chelsea', 'liverpool', 'tottenham', 'west ham', 'manchester city', 'manchester united', 'newcastle'];
@@ -370,26 +537,30 @@ out center tags 80;
   }
 
   List<String> _featuresFromTags(Map<String, dynamic> tags, {required bool hasSportsSignals, required String amenity}) {
-    final features = <String>['live OSM venue'];
+    final features = <String>[];
     if (hasSportsSignals) features.add('sports signal');
     if ((tags['outdoor_seating'] ?? '').toString() == 'yes') features.add('outdoor seating');
     if ((tags['food'] ?? '').toString() == 'yes' || (tags['restaurant'] ?? '').toString().isNotEmpty) features.add('food available');
     if ((tags['opening_hours'] ?? '').toString().isNotEmpty) features.add('opening hours listed');
     if ((tags['website'] ?? '').toString().isNotEmpty) features.add('website listed');
     if (amenity == 'bar') features.add('bar');
-    if (features.length < 3) features.add('broadcast estimated');
+    if (features.isEmpty) features.add('local venue');
+    if (features.length < 3) features.add('matchday option');
     return features.take(6).toList();
   }
 
   String _descriptionForLiveVenue(String name, Map<String, dynamic> tags, {required bool hasSportsSignals}) {
     final hours = (tags['opening_hours'] ?? '').toString().trim();
+    final amenity = (tags['amenity'] ?? 'pub').toString();
+    final venueType = amenity == 'bar' ? 'bar' : 'pub';
+    final seating = (tags['outdoor_seating'] ?? '').toString() == 'yes' ? ' It also lists outdoor seating, which can help on busy match nights.' : '';
     if (hasSportsSignals) {
-      return '$name is a live OpenStreetMap venue with sports-related signals. MatchPint estimates fixture suitability from venue tags, distance, and match relevance.';
+      return '$name is a $venueType with signs of a sport-friendly setup, making it a stronger candidate for watching high-profile fixtures.$seating';
     }
     if (hours.isNotEmpty) {
-      return '$name is a live OpenStreetMap venue with listed opening hours. Broadcast status is estimated until users or venues confirm the fixture.';
+      return '$name is a nearby $venueType with listed opening hours. It may work well as a convenient matchday option, although the exact broadcast should still be confirmed.$seating';
     }
-    return '$name is a live OpenStreetMap venue nearby. MatchPint estimates whether it is suitable for this match from location and venue metadata.';
+    return '$name is a nearby $venueType that MatchPint ranks by distance, comfort, and matchday suitability. Check the venue before travelling for a specific fixture.$seating';
   }
 
   String _areaFromTags(Map<String, dynamic> tags) {

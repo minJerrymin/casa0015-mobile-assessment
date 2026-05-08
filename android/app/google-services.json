@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "307641395122",
+    "project_id": "matchpint-jerry",
+    "storage_bucket": "matchpint-jerry.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307641395122:android:4f1a0e3e5322e1ce1da6ab",
+        "android_client_info": {
+          "package_name": "com.example.matchpint"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALc01FH62Bv8e2pAURNoWtIPUKV9R_lAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

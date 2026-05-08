@@ -3,6 +3,7 @@ import '../models/user_preferences.dart';
 import '../data/team_data.dart';
 import '../theme/app_theme.dart';
 import '../widgets/matchpint_logo.dart';
+import '../widgets/team_badge.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onComplete});
@@ -18,6 +19,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _prefersCalm = false;
   bool _soloMode = false;
   bool _wantsFood = true;
+
+  Future<void> _pickTeam() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        final height = MediaQuery.of(context).size.height * 0.72;
+        return SafeArea(
+          child: SizedBox(
+            height: height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  child: Text(
+                    'Choose your favourite team',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: premierLeagueTeams.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final team = premierLeagueTeams[index];
+                      final selected = team == _team;
+                      return ListTile(
+                        leading: TeamBadge(team: team, size: 32),
+                        title: Text(team, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: selected ? const Icon(Icons.check_circle) : null,
+                        onTap: () => Navigator.of(context).pop(team),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && selected != _team && mounted) {
+      setState(() => _team = selected);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,19 +85,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 28),
             const Text('Favourite team', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: premierLeagueTeams.contains(_team) ? _team : premierLeagueTeams.first,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.shield),
-                labelText: 'Select a Premier League club',
+            InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: _pickTeam,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Row(
+                  children: [
+                    TeamBadge(team: _team, size: 34),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_team, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 3),
+                          Text('Tap to change', style: TextStyle(color: muted, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down_rounded),
+                  ],
+                ),
               ),
-              items: premierLeagueTeams
-                  .map((team) => DropdownMenuItem<String>(
-                        value: team,
-                        child: Text(team, overflow: TextOverflow.ellipsis),
-                      ))
-                  .toList(),
-              onChanged: (team) => setState(() => _team = team ?? _team),
             ),
             const SizedBox(height: 26),
             SwitchListTile.adaptive(

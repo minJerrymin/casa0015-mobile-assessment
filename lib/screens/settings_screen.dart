@@ -4,6 +4,7 @@ import '../models/app_user.dart';
 import '../models/user_preferences.dart';
 import '../data/team_data.dart';
 import '../theme/app_theme.dart';
+import '../widgets/team_badge.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -129,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _emailPasswordController.clear();
       setState(() {
         _showEmailEditor = false;
-        _notice = 'Email updated.';
+        _notice = widget.user.usesFirebase ? 'Verification sent to the new email. Confirm it to finish the change.' : 'Email updated.';
       });
     } else {
       _setNotice('Email update failed. Check your password or use a different email.');
@@ -223,23 +224,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text('Favourite team', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: premierLeagueTeams.contains(widget.preferences.team) ? widget.preferences.team : premierLeagueTeams.first,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.shield),
-                    labelText: 'Select a Premier League club',
-                  ),
-                  items: premierLeagueTeams
-                      .map((team) => DropdownMenuItem<String>(
-                            value: team,
-                            child: Text(team, overflow: TextOverflow.ellipsis),
-                          ))
-                      .toList(),
-                  onChanged: (team) {
-                    if (team != null) {
-                      widget.onUpdatePreferences(widget.preferences.copyWith(team: team));
-                    }
-                  },
+                _TeamSelector(
+                  selectedTeam: premierLeagueTeams.contains(widget.preferences.team) ? widget.preferences.team : premierLeagueTeams.first,
+                  onSelected: (team) => widget.onUpdatePreferences(widget.preferences.copyWith(team: team)),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile.adaptive(
@@ -295,7 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const _InfoTile(icon: Icons.sports_soccer, title: 'Fixture-to-pub matching', body: 'This prototype filters pubs by team-support and venue metadata. The production version will combine fixtures, venue data, user check-ins, and explicit pub submissions.'),
         const _InfoTile(icon: Icons.location_on, title: 'Location', body: 'Pub lists now include an optional Use my location action. With permission, distances and ranking are recalculated from the phone GPS.'),
         const _InfoTile(icon: Icons.mic, title: 'Microphone', body: 'Match mode now asks for microphone permission and samples amplitude for a live dB estimate. It stores only the number, not audio.'),
-        const _InfoTile(icon: Icons.cloud, title: 'External services', body: 'Planned services: football fixture API, places/OSM data, weather API, and Firebase for production authentication.'),
+        const _InfoTile(icon: Icons.cloud_done, title: 'Firebase services', body: 'MatchPint now uses Firebase Cloud Functions for fixtures and Firebase Authentication for production-style account management.'),
         const _InfoTile(icon: Icons.privacy_tip, title: 'Privacy principle', body: 'Store only what improves the matchday experience: account, preferences, pub, match, fit score, dB estimate, selected tags, and notes.'),
       ],
     );
@@ -473,9 +460,9 @@ class _AccountCard extends StatelessWidget {
             ),
             if (showDeleteEditor) ...[
               const SizedBox(height: 14),
-              Text('Delete account', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
+              Text(user.usesFirebase ? 'Delete Firebase account' : 'Delete account', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
               const SizedBox(height: 6),
-              Text('This removes the local account, preferences, and saved match nights from this device.', style: TextStyle(color: muted)),
+              Text(user.usesFirebase ? 'This deletes your Firebase account and removes local MatchPint data from this device.' : 'This removes the local account, preferences, and saved match nights from this device.', style: TextStyle(color: muted)),
               const SizedBox(height: 12),
               TextField(
                 controller: deletePasswordController,
@@ -520,6 +507,57 @@ class _InlineActionHeader extends StatelessWidget {
         Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w900))),
         TextButton(onPressed: onPressed, child: Text(actionLabel)),
       ],
+    );
+  }
+}
+
+class _TeamSelector extends StatelessWidget {
+  const _TeamSelector({required this.selectedTeam, required this.onSelected});
+
+  final String selectedTeam;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.45),
+      borderRadius: BorderRadius.circular(18),
+      child: PopupMenuButton<String>(
+        initialValue: selectedTeam,
+        onSelected: onSelected,
+        itemBuilder: (context) => premierLeagueTeams
+            .map(
+              (team) => PopupMenuItem<String>(
+                value: team,
+                child: Row(
+                  children: [
+                    TeamBadge(team: team, size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(team, overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              TeamBadge(team: selectedTeam, size: 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  selectedTeam,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const Icon(Icons.keyboard_arrow_down),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

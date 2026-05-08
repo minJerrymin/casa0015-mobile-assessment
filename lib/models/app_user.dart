@@ -4,18 +4,25 @@ class AppUser {
     required this.email,
     required this.displayName,
     required this.createdAt,
-    required this.passwordHash,
+    this.passwordHash = '',
+    this.authProvider = 'local',
+    this.emailVerified = false,
   });
 
   final String id;
   final String email;
   final String displayName;
   final DateTime createdAt;
+
+  // Kept only for migration from old prototype accounts. New accounts use
+  // Firebase Authentication and never store a password hash in SharedPreferences.
   final String passwordHash;
+  final String authProvider;
+  final bool emailVerified;
+
+  bool get usesFirebase => authProvider == 'firebase';
 
   static String hashPassword(String password) {
-    // Prototype-only deterministic hash. V1 production should use Firebase Auth
-    // or another server-side auth provider rather than storing passwords locally.
     final trimmed = password.trim();
     var hash = 5381;
     for (final codeUnit in trimmed.codeUnits) {
@@ -26,11 +33,8 @@ class AppUser {
   }
 
   bool matchesPassword(String password) {
-    if (passwordHash.isEmpty) {
-      // Legacy V0.2/V0.3 local accounts did not store a password hash.
-      // Allow a one-time compatibility sign-in and encourage changing password.
-      return true;
-    }
+    if (usesFirebase) return false;
+    if (passwordHash.isEmpty) return true;
     return passwordHash == hashPassword(password);
   }
 
@@ -40,6 +44,8 @@ class AppUser {
     String? displayName,
     DateTime? createdAt,
     String? passwordHash,
+    String? authProvider,
+    bool? emailVerified,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -47,6 +53,8 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       createdAt: createdAt ?? this.createdAt,
       passwordHash: passwordHash ?? this.passwordHash,
+      authProvider: authProvider ?? this.authProvider,
+      emailVerified: emailVerified ?? this.emailVerified,
     );
   }
 
@@ -57,16 +65,20 @@ class AppUser {
       'displayName': displayName,
       'createdAt': createdAt.toIso8601String(),
       'passwordHash': passwordHash,
+      'authProvider': authProvider,
+      'emailVerified': emailVerified,
     };
   }
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
       id: json['id'] as String,
-      email: json['email'] as String,
-      displayName: json['displayName'] as String,
+      email: json['email'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? 'MatchPint Fan',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       passwordHash: json['passwordHash'] as String? ?? '',
+      authProvider: json['authProvider'] as String? ?? 'local',
+      emailVerified: json['emailVerified'] as bool? ?? false,
     );
   }
 }

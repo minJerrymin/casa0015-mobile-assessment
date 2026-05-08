@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../models/match_fixture.dart';
 import '../theme/app_theme.dart';
+import 'team_badge.dart';
 
 class MatchCard extends StatelessWidget {
   const MatchCard({super.key, required this.fixture, required this.onTap});
@@ -25,14 +27,16 @@ class MatchCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           child: Row(
             children: [
-              Container(
+              SizedBox(
                 height: 58,
-                width: 58,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(18),
+                width: 66,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(left: 0, child: TeamBadge(team: fixture.homeTeam, size: 36)),
+                    Positioned(right: 0, child: TeamBadge(team: fixture.awayTeam, size: 36)),
+                  ],
                 ),
-                child: Icon(Icons.sports_soccer, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 14),
               Expanded(

@@ -4,8 +4,6 @@ import '../data/mock_data.dart';
 import '../models/match_fixture.dart';
 import '../models/pub_spot.dart';
 import '../models/user_preferences.dart';
-import '../services/live_data_service.dart';
-import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pub_card.dart';
 
@@ -17,6 +15,9 @@ class PubListScreen extends StatefulWidget {
     required this.pubs,
     required this.fixtures,
     required this.liveDataMessage,
+    required this.locationMessage,
+    required this.gettingLocation,
+    required this.onUseCurrentLocation,
     this.fixture,
   });
 
@@ -25,6 +26,9 @@ class PubListScreen extends StatefulWidget {
   final List<PubSpot> pubs;
   final List<MatchFixture> fixtures;
   final String liveDataMessage;
+  final String locationMessage;
+  final bool gettingLocation;
+  final Future<void> Function() onUseCurrentLocation;
   final MatchFixture? fixture;
 
   @override
@@ -32,23 +36,10 @@ class PubListScreen extends StatefulWidget {
 }
 
 class _PubListScreenState extends State<PubListScreen> {
-  final LocationService _locationService = LocationService();
-  final MatchPintLiveDataService _liveData = MatchPintLiveDataService();
   bool _calmOnly = false;
   bool _soloOnly = false;
   bool _foodFirst = false;
-  bool _gettingLocation = false;
-  double? _userLat;
-  double? _userLng;
-  List<PubSpot>? _nearbyLivePubs;
-  String _locationMessage = 'Use GPS to load nearby OSM pubs and rank them from where you are now.';
   String _query = '';
-
-  @override
-  void dispose() {
-    _liveData.dispose();
-    super.dispose();
-  }
 
   bool _matchesFixture(PubSpot pub, MatchFixture fixture) => pubIsShowingFixture(pub, fixture);
 
@@ -58,52 +49,9 @@ class _PubListScreenState extends State<PubListScreen> {
   }
 
   List<MatchFixture> get _fixtures => widget.fixtures.isEmpty ? mockFixtures : widget.fixtures;
-  List<PubSpot> get _pubs => _nearbyLivePubs ?? (widget.pubs.isEmpty ? mockPubs : widget.pubs);
+  List<PubSpot> get _pubs => widget.pubs.isEmpty ? mockPubs : widget.pubs;
 
-  double _distanceFor(PubSpot pub) {
-    if (_userLat == null || _userLng == null) return pub.distanceKm;
-    return _locationService.distanceKm(
-      fromLatitude: _userLat!,
-      fromLongitude: _userLng!,
-      toLatitude: pub.latitude,
-      toLongitude: pub.longitude,
-    );
-  }
-
-  Future<void> _useCurrentLocation() async {
-    setState(() {
-      _gettingLocation = true;
-      _locationMessage = 'Requesting Android location permission...';
-    });
-    final result = await _locationService.getCurrentLocation();
-    if (!mounted) return;
-    if (!result.success || result.latitude == null || result.longitude == null) {
-      setState(() {
-        _gettingLocation = false;
-        _locationMessage = result.message;
-      });
-      return;
-    }
-
-    setState(() {
-      _userLat = result.latitude;
-      _userLng = result.longitude;
-      _locationMessage = 'GPS fixed. Loading real OSM pubs nearby...';
-    });
-
-    final livePubs = await _liveData.fetchNearbyPubs(
-      latitude: result.latitude!,
-      longitude: result.longitude!,
-      fixtures: _fixtures,
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _gettingLocation = false;
-      _nearbyLivePubs = livePubs.pubs;
-      _locationMessage = livePubs.message;
-    });
-  }
+  double _distanceFor(PubSpot pub) => pub.distanceKm;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +82,7 @@ class _PubListScreenState extends State<PubListScreen> {
 
     final prefs = widget.preferences.copyWith(prefersCalm: widget.preferences.prefersCalm || _calmOnly, soloMode: widget.preferences.soloMode || _soloOnly);
     final subtitle = fixture == null
-        ? '${pubs.length} live/prototype spots ranked by atmosphere fit, screen quality, comfort, and distance.'
+        ? '${pubs.length} spots ranked by atmosphere fit, screen quality, comfort, and live distance.'
         : '${pubs.length} spots likely to show this fixture. Broadcast status is estimated unless users or venues confirm it.';
 
     return ListView(
@@ -172,16 +120,16 @@ class _PubListScreenState extends State<PubListScreen> {
                   children: [
                     Icon(Icons.my_location, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(_locationMessage, style: TextStyle(color: AppTheme.subtleText(context)))),
+                    Expanded(child: Text(widget.locationMessage, style: TextStyle(color: AppTheme.subtleText(context)))),
                   ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    icon: _gettingLocation ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.location_searching),
-                    label: Text(_gettingLocation ? 'Loading nearby pubs...' : 'Use my location'),
-                    onPressed: _gettingLocation ? null : _useCurrentLocation,
+                    icon: widget.gettingLocation ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.location_searching),
+                    label: Text(widget.gettingLocation ? 'Updating nearby pubs...' : 'Refresh my location'),
+                    onPressed: widget.gettingLocation ? null : widget.onUseCurrentLocation,
                   ),
                 ),
               ],

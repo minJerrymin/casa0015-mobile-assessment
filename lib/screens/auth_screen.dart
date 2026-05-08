@@ -1,37 +1,47 @@
 import 'package:flutter/material.dart';
 
-import '../models/app_user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/matchpint_logo.dart';
+
+typedef RegisterCallback = Future<String?> Function({
+  required String email,
+  required String password,
+  required String displayName,
+});
+
+typedef LoginCallback = Future<String?> Function({
+  required String email,
+  required String password,
+});
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
     super.key,
-    required this.savedUsers,
+    required this.firebaseAuthAvailable,
     required this.onRegister,
     required this.onLogin,
+    this.firebaseSetupMessage,
+    this.onResetPassword,
   });
 
-  final List<AppUser> savedUsers;
-  final ValueChanged<AppUser> onRegister;
-  final ValueChanged<AppUser> onLogin;
+  final bool firebaseAuthAvailable;
+  final String? firebaseSetupMessage;
+  final RegisterCallback onRegister;
+  final LoginCallback onLogin;
+  final Future<String> Function(String email)? onResetPassword;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  late bool _registerMode;
-  final TextEditingController _nameController = TextEditingController(text: 'MatchPint Fan');
-  final TextEditingController _emailController = TextEditingController(text: 'fan@matchpint.local');
-  final TextEditingController _passwordController = TextEditingController(text: 'matchnight');
+  bool _registerMode = false;
+  bool _submitting = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String? _notice;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _registerMode = widget.savedUsers.isEmpty;
-  }
 
   @override
   void dispose() {
@@ -41,46 +51,61 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final email = _emailController.text.trim().toLowerCase();
-    final name = _nameController.text.trim().isEmpty ? 'MatchPint Fan' : _nameController.text.trim();
+    final displayName = _nameController.text.trim().isEmpty ? 'MatchPint Fan' : _nameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (!email.contains('@') || email.length < 5) {
-      setState(() => _error = 'Enter a valid email address.');
+      setState(() {
+        _error = 'Enter a valid email address.';
+        _notice = null;
+      });
       return;
     }
     if (password.length < 8) {
-      setState(() => _error = 'Use at least 8 characters for your password.');
+      setState(() {
+        _error = 'Use at least 8 characters for your password.';
+        _notice = null;
+      });
       return;
     }
 
-    final existing = widget.savedUsers.where((u) => u.email.toLowerCase() == email).toList();
-    if (_registerMode) {
-      if (existing.isNotEmpty) {
-        setState(() => _error = 'This account already exists. Sign in instead.');
-        return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+      _notice = null;
+    });
+
+    final message = _registerMode
+        ? await widget.onRegister(email: email, password: password, displayName: displayName)
+        : await widget.onLogin(email: email, password: password);
+
+    if (!mounted) return;
+    setState(() {
+      _submitting = false;
+      if (message != null && message.toLowerCase().contains('sent')) {
+        _notice = message;
+      } else {
+        _error = message;
       }
-      final user = AppUser(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        email: email,
-        displayName: name,
-        createdAt: DateTime.now(),
-        passwordHash: AppUser.hashPassword(password),
-      );
-      widget.onRegister(user);
-    } else {
-      if (existing.isEmpty) {
-        setState(() => _error = 'No account found for this email on this prototype build.');
-        return;
-      }
-      final user = existing.first;
-      if (!user.matchesPassword(password)) {
-        setState(() => _error = 'Incorrect password.');
-        return;
-      }
-      widget.onLogin(user);
+    });
+  }
+
+  Future<void> _resetPassword() async {
+    final reset = widget.onResetPassword;
+    final email = _emailController.text.trim().toLowerCase();
+    if (reset == null) return;
+    if (!email.contains('@')) {
+      setState(() => _error = 'Enter your email first, then tap reset password.');
+      return;
     }
+    final message = await reset(email);
+    if (!mounted) return;
+    setState(() {
+      _notice = message;
+      _error = null;
+    });
   }
 
   @override
@@ -98,7 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
             Text(
               _registerMode
                   ? 'Create one account for your match nights, pub preferences, and saved experiences.'
-                  : 'Normal launches restore your active session. You only see this after signing out, deleting an account, or clearing app data.',
+                  : 'Sign in to restore your match profile, saved nights, and account settings.',
               style: TextStyle(color: muted, height: 1.35),
             ),
             const SizedBox(height: 22),
@@ -108,15 +133,19 @@ class _AuthScreenState extends State<AuthScreen> {
                 ButtonSegment(value: false, label: Text('Sign in'), icon: Icon(Icons.login)),
               ],
               selected: {_registerMode},
-              onSelectionChanged: (selection) => setState(() {
-                _registerMode = selection.first;
-                _error = null;
-              }),
+              onSelectionChanged: _submitting
+                  ? null
+                  : (selection) => setState(() {
+                        _registerMode = selection.first;
+                        _error = null;
+                        _notice = null;
+                      }),
             ),
             const SizedBox(height: 18),
             if (_registerMode) ...[
               TextField(
                 controller: _nameController,
+                enabled: !_submitting,
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.badge_outlined), labelText: 'Display name'),
               ),
@@ -124,6 +153,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
             TextField(
               controller: _emailController,
+              enabled: !_submitting,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(prefixIcon: Icon(Icons.email_outlined), labelText: 'Email'),
@@ -131,27 +161,52 @@ class _AuthScreenState extends State<AuthScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _passwordController,
+              enabled: !_submitting,
               obscureText: true,
               decoration: const InputDecoration(prefixIcon: Icon(Icons.lock_outline), labelText: 'Password'),
               onSubmitted: (_) => _submit(),
             ),
+            if (!_registerMode && widget.onResetPassword != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(onPressed: _submitting ? null : _resetPassword, child: const Text('Reset password')),
+              ),
+            ],
+            if (_notice != null) ...[
+              const SizedBox(height: 10),
+              Text(_notice!, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
             const SizedBox(height: 18),
             FilledButton.icon(
-              icon: Icon(_registerMode ? Icons.person_add_alt_1 : Icons.login),
-              label: Text(_registerMode ? 'Create account' : 'Sign in'),
-              onPressed: _submit,
+              icon: _submitting
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(_registerMode ? Icons.person_add_alt_1 : Icons.login),
+              label: Text(_submitting ? 'Please wait...' : (_registerMode ? 'Create account' : 'Sign in')),
+              onPressed: _submitting ? null : _submit,
             ),
             const SizedBox(height: 22),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Prototype security note: this build stores a local password hash only to test account UX. Production should use Firebase Authentication, email verification, password reset, and secure tokens.',
-                  style: TextStyle(color: muted, height: 1.35),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(widget.firebaseAuthAvailable ? Icons.verified_user : Icons.construction, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.firebaseAuthAvailable
+                            ? 'Account security is handled by Firebase Authentication. Email verification, password reset, secure sign-in, and account deletion are supported.'
+                            : 'Firebase Auth is not configured in this local build, so MatchPint will use a local development fallback. Add Firebase Android config before publishing.',
+                        style: TextStyle(color: muted, height: 1.35),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
