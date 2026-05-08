@@ -48,7 +48,18 @@ The app includes authentication, onboarding, user preferences, theme settings an
 
 ## Screenshots and demo media
 
-Final screenshots and the presentation demo video should be added to the repository before submission/presentation. Recommended locations:
+No final app screenshots are currently committed. When screenshots are added for submission evidence, keep them in `docs/screenshots/` so README and GitHub Pages links can use stable paths, and optionally keep originals in `screenshots/` if they are useful source captures.
+
+Recommended screenshot set:
+
+1. Splash / onboarding
+2. Home screen
+3. Matches screen
+4. Recommended pubs screen
+5. Pub detail screen
+6. Match mode / saved night screen
+
+Recommended paths:
 
 ```text
 docs/screenshots/home.png
@@ -58,15 +69,6 @@ docs/screenshots/pub-detail.png
 docs/screenshots/match-mode.png
 docs/demo/matchpint-demo.mp4
 ```
-
-Suggested README screenshot set:
-
-1. Splash / onboarding
-2. Home screen
-3. Matches screen
-4. Recommended pubs screen
-5. Pub detail screen
-6. Match mode / saved night screen
 
 ---
 
