@@ -14,8 +14,7 @@ class AppUser {
   final String displayName;
   final DateTime createdAt;
 
-  // Kept only for migration from old prototype accounts. New accounts use
-  // Firebase Authentication and never store a password hash in SharedPreferences.
+  // Kept only for older local accounts. New accounts use Firebase Authentication.
   final String passwordHash;
   final String authProvider;
   final bool emailVerified;

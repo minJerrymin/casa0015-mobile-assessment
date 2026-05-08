@@ -31,6 +31,19 @@ class PubCard extends StatelessWidget {
       soloMode: preferences.soloMode,
       wantsFood: preferences.wantsFood,
     );
+    bool isEvidenceTag(String tag) {
+      final value = tag.toLowerCase();
+      return value.contains('external sports-pub') ||
+          value.contains('guide') ||
+          value.contains('source') ||
+          value.contains('verified') ||
+          value.contains('osm ') ||
+          value.contains('evidence') ||
+          value.contains('metadata') ||
+          value.contains('user-confirmed') ||
+          value.contains('comment confirmed');
+    }
+    final featureTags = pub.features.where((feature) => !isEvidenceTag(feature)).take(3).toList();
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
@@ -49,6 +62,8 @@ class PubCard extends StatelessWidget {
                         Text(pub.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 4),
                         Text('${pub.area} • ${distance.toStringAsFixed(1)} km away', style: TextStyle(color: muted)),
+                        const SizedBox(height: 6),
+                        _EvidenceBadge(pub: pub),
                       ],
                     ),
                   ),
@@ -70,7 +85,7 @@ class PubCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          broadcastConfidence == null ? 'Showing: $matchLabel' : 'Showing: $matchLabel • $broadcastConfidence% confidence',
+                          broadcastConfidence == null ? 'Predicted: $matchLabel' : 'Predicted best match: $matchLabel • $broadcastConfidence% fit',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700),
                         ),
@@ -80,8 +95,6 @@ class PubCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 14),
-              Text(pub.description, style: const TextStyle(height: 1.35)),
-              const SizedBox(height: 14),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -90,11 +103,48 @@ class PubCard extends StatelessWidget {
                   _Tag(icon: Icons.people, label: '${pub.crowdLevel}% crowd'),
                   _Tag(icon: Icons.tv, label: '${pub.screenQuality}% screens'),
                   if (pub.soloFriendly) const _Tag(icon: Icons.person, label: 'solo-friendly'),
+                  ...featureTags.map((feature) => _Tag(icon: Icons.local_offer_outlined, label: feature)),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EvidenceBadge extends StatelessWidget {
+  const _EvidenceBadge({required this.pub});
+
+  final PubSpot pub;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = pub.verifiedFootballFriendly
+        ? Colors.green.shade700
+        : pub.likelyFootballFriendly
+            ? Theme.of(context).colorScheme.primary
+            : AppTheme.subtleText(context);
+    final icon = pub.verifiedFootballFriendly
+        ? Icons.verified
+        : pub.likelyFootballFriendly
+            ? Icons.rule
+            : Icons.help_outline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(pub.evidenceTierLabel, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+        ],
       ),
     );
   }

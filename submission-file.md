@@ -13,7 +13,7 @@ date: "08 May 2026"
 ## Link to GitHub Repository
 
 Flutter Application Name - MatchPint
-GitHub Repository - [https://github.com/YOUR-USERNAME/matchpint](https://github.com/YOUR-USERNAME/matchpint)
+GitHub Repository - [https://github.com/minJerrymin/casa0015-mobile-assessment.git](https://github.com/minJerrymin/casa0015-mobile-assessment.git)
 
 ## Introduction to Application
 

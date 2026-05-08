@@ -20,7 +20,7 @@ class LocationService {
     if (!enabled) {
       return const LocationResult(
         success: false,
-        message: 'Location services are switched off. Turn on GPS to rank pubs from your current position.',
+        message: 'Location services are switched off. Choose a London area or turn on GPS to use your current position.',
       );
     }
 
@@ -32,14 +32,14 @@ class LocationService {
     if (permission == LocationPermission.denied) {
       return const LocationResult(
         success: false,
-        message: 'Location permission was denied. MatchPint is still using prototype Central London distances.',
+        message: 'Location permission was denied. You can still choose a London area manually.',
       );
     }
 
     if (permission == LocationPermission.deniedForever) {
       return const LocationResult(
         success: false,
-        message: 'Location permission is permanently denied. Re-enable it in Android app settings to use live distance ranking.',
+        message: 'Location permission is disabled for MatchPint. Re-enable it in Android settings or choose an area manually.',
       );
     }
 
@@ -54,7 +54,7 @@ class LocationService {
         success: true,
         latitude: position.latitude,
         longitude: position.longitude,
-        message: 'Using phone GPS to update pub distances and ranking.',
+        message: 'Showing pubs near your current location.',
       );
     } catch (_) {
       final lastKnown = await Geolocator.getLastKnownPosition();
@@ -63,12 +63,12 @@ class LocationService {
           success: true,
           latitude: lastKnown.latitude,
           longitude: lastKnown.longitude,
-          message: 'Using last known phone location to update pub distances and ranking.',
+          message: 'Showing pubs near your last known location.',
         );
       }
       return const LocationResult(
         success: false,
-        message: 'Could not get a GPS fix. MatchPint is still using prototype Central London distances.',
+        message: 'Could not get a GPS fix. Choose a London area to continue.',
       );
     }
   }

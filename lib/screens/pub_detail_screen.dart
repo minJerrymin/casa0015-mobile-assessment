@@ -9,6 +9,7 @@ import '../models/venue_report.dart';
 import '../services/venue_report_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/metric_bar.dart';
+import '../widgets/pub_map_card.dart';
 import '../widgets/score_pill.dart';
 
 class PubDetailScreen extends StatefulWidget {
@@ -19,12 +20,16 @@ class PubDetailScreen extends StatefulWidget {
     required this.onStartMatchMode,
     this.fixture,
     this.currentUser,
+    this.userLatitude,
+    this.userLongitude,
   });
 
   final PubSpot pub;
   final UserPreferences preferences;
   final MatchFixture? fixture;
   final AppUser? currentUser;
+  final double? userLatitude;
+  final double? userLongitude;
   final VoidCallback onStartMatchMode;
 
   @override
@@ -101,6 +106,24 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
     );
   }
 
+  bool _isEvidenceTag(String tag) {
+    final value = tag.toLowerCase();
+    return value.contains('external sports-pub') ||
+        value.contains('guide') ||
+        value.contains('source') ||
+        value.contains('verified') ||
+        value.contains('osm ') ||
+        value.contains('evidence') ||
+        value.contains('metadata') ||
+        value.contains('user-confirmed') ||
+        value.contains('comment confirmed');
+  }
+
+  List<String> _visibleFeatureTags() {
+    final tags = widget.pub.features.where((feature) => !_isEvidenceTag(feature)).toSet().toList();
+    return tags.take(8).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final muted = AppTheme.subtleText(context);
@@ -116,19 +139,17 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
     final foodScore = aggregate?.hasReports == true ? aggregate!.averageFoodScore : widget.pub.foodScore;
     final baseBroadcastScore = widget.fixture == null ? null : fixtureBroadcastScore(widget.pub, widget.fixture!);
     final broadcastScore = baseBroadcastScore == null ? null : (baseBroadcastScore + (aggregate?.confidenceBoost ?? 0)).clamp(0, 100);
+    final visibleFeatureTags = _visibleFeatureTags();
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.pub.name)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
         children: [
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.22), AppTheme.pintGold.withOpacity(0.24)]),
-            ),
-            child: Center(child: Icon(Icons.sports_bar, size: 76, color: Theme.of(context).colorScheme.onSurface)),
+          PubMapCard(
+            pub: widget.pub,
+            initialUserLatitude: widget.userLatitude,
+            initialUserLongitude: widget.userLongitude,
           ),
           const SizedBox(height: 18),
           Row(
@@ -138,7 +159,17 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          Text('${widget.pub.area} • ${widget.pub.distanceKm.toStringAsFixed(1)} km away • ${widget.pub.vibe}', style: TextStyle(color: muted)),
+          Text('${widget.pub.area} • ${widget.pub.distanceKm.toStringAsFixed(1)} km away', style: TextStyle(color: muted)),
+          if (visibleFeatureTags.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text('Features', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: visibleFeatureTags.map((feature) => Chip(label: Text(feature))).toList(),
+            ),
+          ],
           if (widget.fixture != null) ...[
             const SizedBox(height: 16),
             Card(
@@ -152,13 +183,13 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tonight’s screen', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
+                          Text('Predicted best match', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
                           const SizedBox(height: 4),
                           Text(widget.fixture!.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                           Text(
                             aggregate?.isUserConfirmed == true
-                                ? 'User-confirmed by ${aggregate!.confirmedCount} comment${aggregate.confirmedCount == 1 ? '' : 's'} • confidence $broadcastScore%'
-                                : 'Estimated broadcast confidence: $broadcastScore%',
+                                ? 'Confirmed by ${aggregate!.confirmedCount} comment${aggregate.confirmedCount == 1 ? '' : 's'}'
+                                : 'Match fit: $broadcastScore%',
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
                         ],
@@ -169,16 +200,7 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          Text(widget.pub.description, style: const TextStyle(height: 1.4)),
           const SizedBox(height: 18),
-          if (widget.fixture != null) _ReportSummaryCard(
-            aggregate: aggregate,
-            loading: _loadingReports,
-            message: _reportMessage,
-            onReport: _openReportSheet,
-          ),
-          const SizedBox(height: 22),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -195,14 +217,19 @@ class _PubDetailScreenState extends State<PubDetailScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 18),
-          Text('Features', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 10),
-          Wrap(spacing: 8, runSpacing: 8, children: widget.pub.features.map((f) => Chip(label: Text(f))).toList()),
+          if (widget.fixture != null) ...[
+            const SizedBox(height: 18),
+            _ReportSummaryCard(
+              aggregate: aggregate,
+              loading: _loadingReports,
+              message: _reportMessage,
+              onReport: _openReportSheet,
+            ),
+          ],
           const SizedBox(height: 28),
           FilledButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: Text(widget.fixture == null ? 'Start match mode' : 'Start match mode for ${widget.fixture!.title}'),
+            icon: const Icon(Icons.bookmark_add_outlined),
+            label: Text(widget.fixture == null ? 'Add to My Nights' : 'Add ${widget.fixture!.title} to My Nights'),
             onPressed: widget.onStartMatchMode,
           ),
         ],
@@ -247,10 +274,6 @@ class _ReportSummaryCard extends StatelessWidget {
             if ((aggregate?.latestNote ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Latest note: “${aggregate!.latestNote}”', style: const TextStyle(fontWeight: FontWeight.w600)),
-            ],
-            if (message != null && message!.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(message!, style: TextStyle(color: muted, fontSize: 12)),
             ],
             const SizedBox(height: 12),
             SizedBox(
@@ -344,7 +367,7 @@ class _ReportSheetState extends State<_ReportSheet> {
               value: _isShowing,
               onChanged: (value) => setState(() => _isShowing = value),
               title: const Text('This pub is showing this match'),
-              subtitle: const Text('This directly improves MatchPint’s broadcast confidence.'),
+              subtitle: const Text('Help other fans choose the right pub.'),
               contentPadding: EdgeInsets.zero,
             ),
             _SliderRow(label: 'Screen quality', value: _screenQuality, min: 0, max: 100, suffix: '%', onChanged: (value) => setState(() => _screenQuality = value)),

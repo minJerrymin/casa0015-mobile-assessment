@@ -62,6 +62,8 @@ final List<PubSpot> mockPubs = [
     latitude: 51.5202,
     longitude: -0.1053,
     description: 'A loud, high-energy football pub for fans who want the match to feel like a mini stadium.',
+    sportsEvidenceScore: 96,
+    sportsEvidenceReasons: ['8 screens', 'football identity', 'crowd atmosphere'],
   ),
   PubSpot(
     id: 'p2',
@@ -82,6 +84,8 @@ final List<PubSpot> mockPubs = [
     latitude: 51.5224,
     longitude: -0.1300,
     description: 'A relaxed match spot for people who want to follow the game without being swallowed by the crowd.',
+    sportsEvidenceScore: 82,
+    sportsEvidenceReasons: ['screen signal', 'bookable tables', 'football-friendly'],
   ),
   PubSpot(
     id: 'p3',
@@ -102,6 +106,8 @@ final List<PubSpot> mockPubs = [
     latitude: 51.5465,
     longitude: -0.1027,
     description: 'A local pub with a strong football identity and a friendly crowd that still leaves room to breathe.',
+    sportsEvidenceScore: 88,
+    sportsEvidenceReasons: ['football identity', 'home fans', 'good sightlines'],
   ),
   PubSpot(
     id: 'p4',
@@ -122,6 +128,8 @@ final List<PubSpot> mockPubs = [
     latitude: 51.5260,
     longitude: -0.0800,
     description: 'A balanced option for groups with mixed loyalties or newer fans who want atmosphere without hostility.',
+    sportsEvidenceScore: 76,
+    sportsEvidenceReasons: ['mixed fans', 'screen signal', 'groups'],
   ),
   PubSpot(
     id: 'p5',
@@ -142,6 +150,8 @@ final List<PubSpot> mockPubs = [
     latitude: 51.5308,
     longitude: -0.1238,
     description: 'A practical matchday spot for fans who care as much about getting home smoothly as seeing the match.',
+    sportsEvidenceScore: 70,
+    sportsEvidenceReasons: ['near station', 'walk-ins', 'screen signal'],
   ),
 ];
 

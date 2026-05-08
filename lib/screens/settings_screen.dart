@@ -263,7 +263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Follow system by default, or override it for testing.', style: TextStyle(color: muted)),
+                Text('Choose how MatchPint looks on this device.', style: TextStyle(color: muted)),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 10,
@@ -278,12 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 18),
-        const _InfoTile(icon: Icons.sports_soccer, title: 'Fixture-to-pub matching', body: 'This prototype filters pubs by team-support and venue metadata. The production version will combine fixtures, venue data, user check-ins, and explicit pub submissions.'),
-        const _InfoTile(icon: Icons.location_on, title: 'Location', body: 'Pub lists now include an optional Use my location action. With permission, distances and ranking are recalculated from the phone GPS.'),
-        const _InfoTile(icon: Icons.mic, title: 'Microphone', body: 'Match mode now asks for microphone permission and samples amplitude for a live dB estimate. It stores only the number, not audio.'),
-        const _InfoTile(icon: Icons.cloud_done, title: 'Firebase services', body: 'MatchPint now uses Firebase Cloud Functions for fixtures and Firebase Authentication for production-style account management.'),
-        const _InfoTile(icon: Icons.privacy_tip, title: 'Privacy principle', body: 'Store only what improves the matchday experience: account, preferences, pub, match, fit score, dB estimate, selected tags, and notes.'),
+
       ],
     );
   }

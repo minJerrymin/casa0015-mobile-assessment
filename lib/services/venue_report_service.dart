@@ -16,7 +16,7 @@ class VenueReportService {
     if (!isAvailable) {
       return ReportServiceResult.success(
         VenueReportAggregate.empty(pubId: pubId, pubName: pubName, fixtureId: fixtureId, fixtureTitle: fixtureTitle),
-        message: 'Firebase is not configured, using local comment state.',
+        message: 'Comments are saved on this device.',
       );
     }
     try {
@@ -36,7 +36,7 @@ class VenueReportService {
 
   Future<ReportServiceResult<VenueReportAggregate>> submitReport(VenueReport report) async {
     if (!isAvailable) {
-      return ReportServiceResult.failure('Firebase is not configured on this build.');
+      return ReportServiceResult.failure('Comments are not available right now.');
     }
     try {
       final reportRef = _db.collection('matchpint_venue_reports').doc();

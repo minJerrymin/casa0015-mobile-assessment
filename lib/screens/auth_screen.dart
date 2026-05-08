@@ -189,27 +189,6 @@ class _AuthScreenState extends State<AuthScreen> {
               label: Text(_submitting ? 'Please wait...' : (_registerMode ? 'Create account' : 'Sign in')),
               onPressed: _submitting ? null : _submit,
             ),
-            const SizedBox(height: 22),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(widget.firebaseAuthAvailable ? Icons.verified_user : Icons.construction, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.firebaseAuthAvailable
-                            ? 'Account security is handled by Firebase Authentication. Email verification, password reset, secure sign-in, and account deletion are supported.'
-                            : 'Firebase Auth is not configured in this local build, so MatchPint will use a local development fallback. Add Firebase Android config before publishing.',
-                        style: TextStyle(color: muted, height: 1.35),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

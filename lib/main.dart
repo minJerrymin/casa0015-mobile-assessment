@@ -60,8 +60,8 @@ class _MatchPintAppState extends State<MatchPintApp> {
   List<PubSpot> _pubs = mockPubs;
   double? _userLatitude;
   double? _userLongitude;
-  String _locationMessage = 'Location not shared yet. MatchPint can use it to rank nearby pubs when you allow it.';
-  String _liveDataMessage = 'Prototype data is ready. Live fixtures and OSM pubs will load automatically when network access is available.';
+  String _locationMessage = 'Showing pubs around Central London.';
+  String _liveDataMessage = 'Latest matches and pub recommendations are ready.';
 
   @override
   void initState() {
@@ -123,8 +123,8 @@ class _MatchPintAppState extends State<MatchPintApp> {
         _loadingLiveData = true;
         // Keep existing screen content visible. Fresh data will replace it as soon as each source returns.
         _liveDataMessage = _fixtures.isEmpty
-            ? 'Loading latest fixtures and nearby pubs...'
-            : 'Showing current data while MatchPint refreshes in the background...';
+            ? 'Loading matches and pubs...'
+            : 'Updating recommendations...';
       });
     }
 
@@ -149,30 +149,33 @@ class _MatchPintAppState extends State<MatchPintApp> {
       setState(() {
         _pubs = pubResult.pubs.isEmpty ? _pubs : pubResult.pubs;
         _loadingLiveData = false;
-        _liveDataMessage = '${fixtureResult.message} ${pubResult.message}';
+        _liveDataMessage = 'Latest matches and pub recommendations are ready.';
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loadingLiveData = false;
-        _liveDataMessage = 'Showing latest available fixtures and pubs. MatchPint will retry live refresh shortly.';
+        _liveDataMessage = 'Showing saved matches and pub recommendations.';
       });
     }
   }
 
 
 
+  bool get _canShowLocationPrompt =>
+      !_showSplash && !_loading && _currentUser != null && _onboarded;
+
   void _scheduleLocationExplainer() {
-    if (_locationExplainerShown || _gettingLocation) return;
+    if (_locationExplainerShown || _gettingLocation || !_canShowLocationPrompt) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 350), () {
-        if (mounted) _offerLocationAndRefresh();
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (mounted && _canShowLocationPrompt) _offerLocationAndRefresh();
       });
     });
   }
 
   Future<void> _offerLocationAndRefresh() async {
-    if (_locationExplainerShown || _gettingLocation) return;
+    if (_locationExplainerShown || _gettingLocation || !_canShowLocationPrompt) return;
     final dialogContext = _navigatorKey.currentContext;
     if (dialogContext == null) {
       _scheduleLocationExplainer();
@@ -203,7 +206,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
       await _requestLocationAndRefresh();
     } else if (mounted) {
       setState(() {
-        _locationMessage = 'Location not shared. Using Central London as the default search area.';
+        _locationMessage = 'Showing pubs around Central London.';
       });
     }
   }
@@ -213,7 +216,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
     if (mounted) {
       setState(() {
         _gettingLocation = true;
-        _locationMessage = 'Requesting location permission so MatchPint can rank pubs near you.';
+        _locationMessage = 'Finding pubs near you...';
       });
     }
     final result = await _locationService.getCurrentLocation();
@@ -232,6 +235,17 @@ class _MatchPintAppState extends State<MatchPintApp> {
         _locationMessage = result.message;
       });
     }
+  }
+
+
+  Future<void> _chooseSearchArea(double latitude, double longitude, String label) async {
+    if (_loadingLiveData) return;
+    setState(() {
+      _userLatitude = latitude;
+      _userLongitude = longitude;
+      _locationMessage = 'Showing pubs around $label.';
+    });
+    await _refreshLiveData(latitude: latitude, longitude: longitude);
   }
 
   Future<void> _completeOnboarding(UserPreferences preferences) async {
@@ -277,7 +291,6 @@ class _MatchPintAppState extends State<MatchPintApp> {
       return result.message;
     }
 
-    // Local fallback keeps development builds usable before Firebase Android config is added.
     final cleanEmail = email.trim().toLowerCase();
     final existing = _users.any((u) => u.email.toLowerCase() == cleanEmail);
     if (existing) return 'This account already exists. Sign in instead.';
@@ -305,7 +318,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
       _tabIndex = 0;
       _locationExplainerShown = false;
     });
-    return 'Development fallback account created. Configure Firebase for production Auth.';
+    return null;
   }
 
   Future<String?> _loginUser({required String email, required String password}) async {
@@ -462,6 +475,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
           locationMessage: _locationMessage,
           gettingLocation: _gettingLocation,
           onUseCurrentLocation: _requestLocationAndRefresh,
+          onChooseLocation: _chooseSearchArea,
           preferences: _preferences,
           fixture: fixture,
           pubs: _pubs,
@@ -481,6 +495,8 @@ class _MatchPintAppState extends State<MatchPintApp> {
         preferences: _preferences,
         fixture: selectedFixture,
         currentUser: _currentUser,
+        userLatitude: _userLatitude,
+        userLongitude: _userLongitude,
         onStartMatchMode: () => _openMatchMode(pub, selectedFixture),
       ),
     ));
@@ -520,6 +536,7 @@ class _MatchPintAppState extends State<MatchPintApp> {
           locationMessage: _locationMessage,
           gettingLocation: _gettingLocation,
           onUseCurrentLocation: _requestLocationAndRefresh,
+          onChooseLocation: _chooseSearchArea,
           preferences: _preferences,
           pubs: _pubs,
           fixtures: _fixtures,
@@ -564,7 +581,12 @@ class _MatchPintAppState extends State<MatchPintApp> {
 
   Widget _buildHome() {
     if (_showSplash || _loading) {
-      return SplashScreen(onFinished: () => setState(() => _showSplash = false));
+      return SplashScreen(
+        onFinished: () {
+          setState(() => _showSplash = false);
+          _scheduleLocationExplainer();
+        },
+      );
     }
     if (_currentUser == null) {
       return AuthScreen(

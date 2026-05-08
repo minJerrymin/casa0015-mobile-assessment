@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
+import '../data/external_sports_venue_data.dart';
 import '../data/mock_data.dart';
 import '../data/team_data.dart';
 import '../models/match_fixture.dart';
@@ -63,8 +64,8 @@ class MatchPintLiveDataService {
       fixtures: fallback.fixtures,
       live: fallback.live,
       message: endpoint.isEmpty
-          ? 'Showing latest available fixtures. MatchPint backend URL will be bundled into the release APK.'
-          : 'Showing latest available fixtures while MatchPint refreshes the live service.',
+          ? 'Showing latest available fixtures.'
+          : 'Showing latest available fixtures.',
     );
   }
 
@@ -209,15 +210,14 @@ class MatchPintLiveDataService {
       return LiveFixtureResult(
         fixtures: mockFixtures,
         live: false,
-        message: 'Live fixture API unavailable. Using the built-in prototype fixtures.',
+        message: 'Showing saved fixtures while the live service reconnects.',
       );
     }
 
-    final skipped = failures.isEmpty ? '' : ' Partial fallback: ${failures.join('; ')}.';
     return LiveFixtureResult(
       fixtures: deduped,
       live: true,
-      message: 'Showing the latest available next-3-day fixtures from fallback public feeds while MatchPint refreshes the live backend.$skipped',
+      message: 'Showing latest available fixtures.',
     );
   }
 
@@ -247,7 +247,7 @@ out center tags 80;
         return LivePubResult(
           pubs: _fallbackPubsWithDistance(latitude, longitude, fixtures),
           live: false,
-          message: 'Overpass returned HTTP ${response.statusCode}. Using prototype pubs with live-distance ranking.',
+          message: 'Showing saved pubs while the map service reconnects.',
         );
       }
 
@@ -257,7 +257,7 @@ out center tags 80;
         return LivePubResult(
           pubs: _fallbackPubsWithDistance(latitude, longitude, fixtures),
           live: false,
-          message: 'No OSM pubs or bars were returned nearby. Using prototype pubs with live-distance ranking.',
+          message: 'No nearby pubs were returned for this area. Showing recommended MatchPint venues.',
         );
       }
 
@@ -274,25 +274,26 @@ out center tags 80;
         }
       }
 
-      final deduped = _dedupePubs(pubs).take(30).toList();
-      if (deduped.isEmpty) {
+      final deduped = _dedupePubs(pubs);
+      final footballFriendly = _sportsFriendlyPubs(deduped).take(30).toList();
+      if (footballFriendly.isEmpty) {
         return LivePubResult(
           pubs: _fallbackPubsWithDistance(latitude, longitude, fixtures),
           live: false,
-          message: 'Nearby OSM venues lacked usable names/locations. Using prototype pubs with live-distance ranking.',
+          message: 'Showing recommended football-friendly venues for this area.',
         );
       }
 
       return LivePubResult(
-        pubs: deduped,
+        pubs: footballFriendly,
         live: true,
-        message: 'Live pubs loaded from OpenStreetMap/Overpass around your selected area. Broadcast status is estimated from fixture and venue signals.',
+        message: 'Recommended pubs are ready.',
       );
     } catch (error) {
       return LivePubResult(
         pubs: _fallbackPubsWithDistance(latitude, longitude, fixtures),
         live: false,
-        message: 'Could not reach any Overpass endpoint (${error.runtimeType}). Using prototype pubs with live-distance ranking.',
+        message: 'Showing saved pubs while the map service reconnects.',
       );
     }
   }
@@ -313,7 +314,7 @@ out center tags 80;
               endpoint,
               headers: const {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'User-Agent': 'MatchPint CASA0015 student prototype',
+                'User-Agent': 'MatchPint',
               },
               body: {'data': query},
             )
@@ -458,12 +459,14 @@ out center tags 80;
     final amenity = (tags['amenity'] ?? 'pub').toString();
     final area = _areaFromTags(tags);
     final distance = _distanceKm(latitude, longitude, lat, lon);
-    final hasSportsSignals = _hasSportsSignals(name, tags);
-    final screenQuality = (hasSportsSignals ? 75 : 58) + seed % 18;
-    final crowdLevel = 38 + seed % 49;
-    final noiseDb = 52 + seed % 29;
+    final sportsEvidence = _sportsEvidenceForVenue(name, tags);
+    final hasSportsSignals = sportsEvidence.score >= 45;
+    final evidenceLift = (sportsEvidence.score / 3).round();
+    final screenQuality = 48 + evidenceLift + seed % 14;
+    final crowdLevel = 34 + seed % 44 + (hasSportsSignals ? 8 : 0);
+    final noiseDb = 50 + seed % 27 + (hasSportsSignals ? 3 : 0);
     final foodScore = 58 + (seed ~/ 7) % 35;
-    final soloFriendly = noiseDb < 69 || crowdLevel < 62;
+    final soloFriendly = noiseDb < 70 || crowdLevel < 65;
     final fixtureIds = _estimatedBroadcastFixtures(seed, fixtures, hasSportsSignals: hasSportsSignals);
 
     return PubSpot(
@@ -471,20 +474,22 @@ out center tags 80;
       name: name,
       area: area,
       distanceKm: distance,
-      vibe: hasSportsSignals ? 'Live sport venue signal' : amenity == 'bar' ? 'Bar with possible screens' : 'Local pub, broadcast unconfirmed',
+      vibe: sportsEvidence.score >= 70 ? 'Verified football-friendly' : hasSportsSignals ? 'Likely football-friendly' : amenity == 'bar' ? 'Nearby bar, unverified' : 'Nearby pub, unverified',
       noiseDb: noiseDb.clamp(45, 88).toInt(),
       crowdLevel: crowdLevel.clamp(25, 95).toInt(),
       screenQuality: screenQuality.clamp(45, 96).toInt(),
       soloFriendly: soloFriendly,
       foodScore: foodScore.clamp(40, 95).toInt(),
       priceLevel: 2 + seed % 2,
-      features: _featuresFromTags(tags, hasSportsSignals: hasSportsSignals, amenity: amenity),
+      features: _featuresFromTags(tags, sportsEvidence: sportsEvidence, amenity: amenity),
       supportedTeams: _estimatedSupportedTeams(seed, fixtures),
       broadcastingFixtureIds: fixtureIds,
-      broadcastConfidence: hasSportsSignals ? 72 + seed % 18 : 48 + seed % 22,
+      broadcastConfidence: (48 + (sportsEvidence.score * 0.45).round() + seed % 16).clamp(35, 95).toInt(),
       latitude: lat,
       longitude: lon,
-      description: _descriptionForLiveVenue(name, tags, hasSportsSignals: hasSportsSignals),
+      description: _descriptionForLiveVenue(name, tags, sportsEvidence: sportsEvidence),
+      sportsEvidenceScore: sportsEvidence.score,
+      sportsEvidenceReasons: sportsEvidence.reasons,
     );
   }
 
@@ -512,6 +517,8 @@ out center tags 80;
         latitude: pub.latitude,
         longitude: pub.longitude,
         description: pub.description,
+        sportsEvidenceScore: pub.sportsEvidenceScore,
+        sportsEvidenceReasons: pub.sportsEvidenceReasons,
       );
     }).toList();
   }
@@ -536,31 +543,42 @@ out center tags 80;
     return teams.toSet().toList();
   }
 
-  List<String> _featuresFromTags(Map<String, dynamic> tags, {required bool hasSportsSignals, required String amenity}) {
+  List<String> _featuresFromTags(Map<String, dynamic> tags, {required _SportsEvidence sportsEvidence, required String amenity}) {
     final features = <String>[];
-    if (hasSportsSignals) features.add('sports signal');
+    final joined = tags.entries.map((entry) => '${entry.key}:${entry.value}').join(' ').toLowerCase();
+
     if ((tags['outdoor_seating'] ?? '').toString() == 'yes') features.add('outdoor seating');
     if ((tags['food'] ?? '').toString() == 'yes' || (tags['restaurant'] ?? '').toString().isNotEmpty) features.add('food available');
     if ((tags['opening_hours'] ?? '').toString().isNotEmpty) features.add('opening hours listed');
-    if ((tags['website'] ?? '').toString().isNotEmpty) features.add('website listed');
+    if ((tags['website'] ?? '').toString().isNotEmpty || (tags['contact:website'] ?? '').toString().isNotEmpty) features.add('website listed');
     if (amenity == 'bar') features.add('bar');
-    if (features.isEmpty) features.add('local venue');
-    if (features.length < 3) features.add('matchday option');
-    return features.take(6).toList();
+    if (_containsAny(joined, const ['sky sports'])) features.add('Sky Sports');
+    if (_containsAny(joined, const ['tnt sports', 'bt sport'])) features.add('TNT Sports');
+    if (_containsAny(joined, const ['big screen', 'screens', 'television', 'tv=yes', 'television=yes'])) features.add('screens');
+    if ((tags['wheelchair'] ?? '').toString() == 'yes') features.add('step-free access');
+
+    // Keep Features user-facing: no source names, evidence labels, or developer-style metadata.
+    if (features.isEmpty && sportsEvidence.score >= 45) features.add('matchday atmosphere');
+    if (features.isEmpty) features.add('nearby pub');
+    return features.toSet().take(7).toList();
   }
 
-  String _descriptionForLiveVenue(String name, Map<String, dynamic> tags, {required bool hasSportsSignals}) {
-    final hours = (tags['opening_hours'] ?? '').toString().trim();
+  String _descriptionForLiveVenue(String name, Map<String, dynamic> tags, {required _SportsEvidence sportsEvidence}) {
     final amenity = (tags['amenity'] ?? 'pub').toString();
     final venueType = amenity == 'bar' ? 'bar' : 'pub';
     final seating = (tags['outdoor_seating'] ?? '').toString() == 'yes' ? ' It also lists outdoor seating, which can help on busy match nights.' : '';
-    if (hasSportsSignals) {
-      return '$name is a $venueType with signs of a sport-friendly setup, making it a stronger candidate for watching high-profile fixtures.$seating';
+    final externalLabel = sportsEvidence.externalEvidenceLabel;
+    if (externalLabel != null && externalLabel.isNotEmpty) {
+      return '$name is a nearby $venueType with verified football-friendly evidence. $externalLabel MatchPint still predicts the most suitable fixture rather than claiming a fixed broadcast schedule.$seating';
     }
-    if (hours.isNotEmpty) {
-      return '$name is a nearby $venueType with listed opening hours. It may work well as a convenient matchday option, although the exact broadcast should still be confirmed.$seating';
+    final evidence = sportsEvidence.reasons.isEmpty ? 'map data only' : sportsEvidence.reasons.take(2).join(' and ');
+    if (sportsEvidence.score >= 70) {
+      return '$name is a nearby $venueType with strong open-data evidence for live sport or televisions from $evidence. MatchPint predicts the best fixture for the venue.$seating';
     }
-    return '$name is a nearby $venueType that MatchPint ranks by distance, comfort, and matchday suitability. Check the venue before travelling for a specific fixture.$seating';
+    if (sportsEvidence.score >= 45) {
+      return '$name is a nearby $venueType with some football-friendly signals from $evidence. It is labelled as likely rather than verified until comments or stronger external data confirm screens.$seating';
+    }
+    return '$name is a nearby $venueType from map data, but MatchPint has not found reliable evidence that it has football screens yet. It is shown only as an unverified fallback.$seating';
   }
 
   String _areaFromTags(Map<String, dynamic> tags) {
@@ -571,10 +589,99 @@ out center tags 80;
     return 'Nearby';
   }
 
-  bool _hasSportsSignals(String name, Map<String, dynamic> tags) {
-    final joined = ([name, ...tags.entries.map((e) => '${e.key}:${e.value}')]).join(' ').toLowerCase();
-    return joined.contains('sport') || joined.contains('football') || joined.contains('screen') || joined.contains('tv') || joined.contains('pub');
+  List<PubSpot> _sportsFriendlyPubs(List<PubSpot> pubs) {
+    int tierRank(PubSpot pub) {
+      if (pub.verifiedFootballFriendly) return 0;
+      if (pub.likelyFootballFriendly) return 1;
+      return 2;
+    }
+
+    final sorted = pubs.toList()
+      ..sort((a, b) {
+        final tierCompare = tierRank(a).compareTo(tierRank(b));
+        if (tierCompare != 0) return tierCompare;
+        final scoreCompare = b.sportsEvidenceScore.compareTo(a.sportsEvidenceScore);
+        if (scoreCompare != 0) return scoreCompare;
+        return a.distanceKm.compareTo(b.distanceKm);
+      });
+
+    final verified = sorted.where((pub) => pub.verifiedFootballFriendly).toList();
+    final likely = sorted.where((pub) => pub.likelyFootballFriendly).toList();
+    final unverified = sorted.where((pub) => pub.unverifiedFootballVenue).toList();
+
+    // Product rule: normal recommendations should be verified/likely first. Unverified
+    // OSM pubs are only included when free/open data is too sparse around the user.
+    final output = <PubSpot>[...verified, ...likely];
+    if (output.length < 8) {
+      output.addAll(unverified.take(8 - output.length));
+    }
+    return output.take(30).toList();
   }
+
+  _SportsEvidence _sportsEvidenceForVenue(String name, Map<String, dynamic> tags) {
+    final externalEvidence = externalSportsVenueEvidenceForName(name);
+    if (externalEvidence != null) {
+      return _SportsEvidence(
+        score: externalEvidence.score.clamp(70, 100).toInt(),
+        reasons: [
+          'external sports-pub source',
+          externalEvidence.sourceName,
+          ...externalEvidence.features.take(3),
+        ].toSet().take(5).toList(),
+        externalSourceName: externalEvidence.sourceName,
+        externalSourceUrl: externalEvidence.sourceUrl,
+        externalEvidenceLabel: externalEvidence.evidenceLabel,
+      );
+    }
+
+    var score = 0;
+    final reasons = <String>[];
+    final values = tags.entries.map((entry) => '${entry.key}:${entry.value}').join(' ');
+    final joined = '$name $values'.toLowerCase();
+    final website = '${tags['website'] ?? ''} ${tags['contact:website'] ?? ''} ${tags['url'] ?? ''}'.toLowerCase();
+    final brand = '${tags['brand'] ?? ''} ${tags['operator'] ?? ''}'.toLowerCase();
+
+    void add(int points, String reason) {
+      score += points;
+      if (!reasons.contains(reason)) reasons.add(reason);
+    }
+
+    // Strong free/open-data evidence. These can make a venue "Verified" because they
+    // come from explicit OSM metadata rather than just the venue name.
+    final television = '${tags['television'] ?? ''}'.toLowerCase();
+    final tv = '${tags['tv'] ?? ''}'.toLowerCase();
+    final liveSport = '${tags['live_sport'] ?? tags['live_sports'] ?? ''}'.toLowerCase();
+    final sport = '${tags['sport'] ?? ''}'.toLowerCase();
+    final theme = '${tags['theme'] ?? ''}'.toLowerCase();
+
+    if (['yes', 'true', '1'].contains(television)) add(82, 'OSM television=yes');
+    if (['yes', 'true', '1'].contains(tv)) add(78, 'OSM tv=yes');
+    if (['yes', 'true', '1'].contains(liveSport)) add(88, 'OSM live_sport=yes');
+    if (sport.contains('football') || sport.contains('soccer')) add(70, 'OSM sport=football');
+    if (theme.contains('sports') || theme.contains('sport')) add(72, 'OSM sports theme');
+    if (_containsAny(joined, const ['screen:football=yes', 'screen:sport=yes', 'screens=yes'])) add(70, 'OSM screen evidence');
+
+    final hasVerifiedOpenSignal = score >= 70;
+
+    // Weak fallback signals. They support ranking, but cannot make a venue Verified alone.
+    if (_containsAny(joined, const ['sports bar', 'sports pub', 'live sports', 'live sport'])) add(24, 'likely sports-bar metadata');
+    if (_containsAny(joined, const ['sky sports', 'tnt sports', 'bt sport', 'premier sports'])) add(22, 'likely sports TV provider metadata');
+    if (_containsAny(joined, const ['big screen', 'screens', 'screening', 'television', ' live tv'])) add(12, 'likely screen / TV metadata');
+    if (_containsAny(website, const ['live-sport', 'sky-sports', 'tnt-sports'])) add(14, 'likely venue website sport path');
+    if (_containsAny(brand, const ['belushi', 'walkabout', 'greenwood', 'rileys', 'sports bar'])) add(16, 'likely sports-pub brand');
+
+    if (_containsAny(joined, const ['wine bar', 'cocktail', 'gin bar', 'fine dining', 'hotel bar', 'members club', 'lounge'])) {
+      score -= 30;
+      if (!reasons.contains('negative venue-style signal')) reasons.add('negative venue-style signal');
+    }
+
+    // Do not let weak keyword inference masquerade as verified data.
+    final maxScore = hasVerifiedOpenSignal ? 100 : 64;
+    final clamped = score.clamp(0, maxScore).toInt();
+    return _SportsEvidence(score: clamped, reasons: reasons.take(5).toList());
+  }
+
+  bool _containsAny(String text, List<String> needles) => needles.any(text.contains);
 
   List<MatchFixture> _dedupeFixtures(List<MatchFixture> fixtures) {
     final seen = <String>{};
@@ -619,6 +726,22 @@ out center tags 80;
   double _toRadians(double degrees) => degrees * pi / 180.0;
 
   void dispose() => _client.close();
+}
+
+class _SportsEvidence {
+  const _SportsEvidence({
+    required this.score,
+    required this.reasons,
+    this.externalSourceName,
+    this.externalSourceUrl,
+    this.externalEvidenceLabel,
+  });
+
+  final int score;
+  final List<String> reasons;
+  final String? externalSourceName;
+  final String? externalSourceUrl;
+  final String? externalEvidenceLabel;
 }
 
 class _LeagueSource {

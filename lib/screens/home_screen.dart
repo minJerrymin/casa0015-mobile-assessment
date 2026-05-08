@@ -40,23 +40,19 @@ class HomeScreen extends StatelessWidget {
     final pubSource = pubs.isEmpty ? mockPubs : pubs;
     final heroMatch = bestMatchForHome(preferences, fixtureSource);
     final recommended = [...pubSource]
-      ..sort((a, b) => b
-          .comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood)
-          .compareTo(a.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood)));
+      ..sort((a, b) {
+        final aScore = a.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood) + (a.sportsEvidenceScore / 4).round();
+        final bScore = b.comfortScore(prefersCalm: preferences.prefersCalm, soloMode: preferences.soloMode, wantsFood: preferences.wantsFood) + (b.sportsEvidenceScore / 4).round();
+        return bScore.compareTo(aScore);
+      });
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
       children: [
         Text('Tonight, find your screen.', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
-        Text('Profile: ${preferences.team} • ${preferences.prefersCalm ? 'calm' : 'atmosphere'} • ${preferences.soloMode ? 'solo-friendly' : 'group-friendly'}', style: TextStyle(color: muted)),
-        const SizedBox(height: 16),
-        _LiveDataCard(
-          message: liveDataMessage,
-          loading: loadingLiveData,
-          onRefresh: () => onRefreshLiveData(),
-        ),
-        const SizedBox(height: 16),
+        Text('${preferences.team} • ${preferences.prefersCalm ? 'calm' : 'atmosphere'} • ${preferences.soloMode ? 'solo-friendly' : 'group-friendly'}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: muted, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 18),
         Material(
           color: Colors.transparent,
           child: InkWell(
