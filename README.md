@@ -48,27 +48,19 @@ The app includes authentication, onboarding, user preferences, theme settings an
 
 ## Screenshots and demo media
 
-No final app screenshots are currently committed. When screenshots are added for submission evidence, keep them in `docs/screenshots/` so README and GitHub Pages links can use stable paths, and optionally keep originals in `screenshots/` if they are useful source captures.
+The submitted app screenshots are committed in `docs/screenshots/` and are embedded below so the README and GitHub Pages landing page use the same stable image paths.
 
-Recommended screenshot set:
+| Login / register | Onboarding | Home |
+|---|---|---|
+| ![Login and register screens](docs/screenshots/01-login-register.jpg) | ![Onboarding flow](docs/screenshots/02-onboarding.jpg) | ![Home screen](docs/screenshots/03-home.jpg) |
 
-1. Splash / onboarding
-2. Home screen
-3. Matches screen
-4. Recommended pubs screen
-5. Pub detail screen
-6. Match mode / saved night screen
+| Matches | Pub search | Pub detail |
+|---|---|---|
+| ![Matches screen](docs/screenshots/04-matches.jpg) | ![Pubs search screen](docs/screenshots/05-pubs-search.jpg) | ![Pub detail screen](docs/screenshots/06-pub-detail.jpg) |
 
-Recommended paths:
-
-```text
-docs/screenshots/01-splash.png
-docs/screenshots/02-home.png
-docs/screenshots/03-matches.png
-docs/screenshots/04-pubs.png
-docs/screenshots/05-pub-detail.png
-docs/screenshots/06-match-mode.png
-```
+| Map | Experience record | Settings |
+|---|---|---|
+| ![Map screen](docs/screenshots/07-map.jpg) | ![Experience record screen](docs/screenshots/08-experience-record.jpg) | ![Settings screen](docs/screenshots/09-settings.jpg) |
 
 ---
 
