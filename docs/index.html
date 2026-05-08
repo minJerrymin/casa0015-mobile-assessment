@@ -20,7 +20,8 @@
     .primary { background:var(--green); color:#07110b; }
     .secondary { border:1px solid rgba(255,255,255,.14); color:var(--cream); }
     .phone { min-height:620px; border-radius:42px; padding:22px; background:linear-gradient(160deg, rgba(46,204,113,.18), rgba(244,178,56,.12)); border:1px solid rgba(255,255,255,.1); box-shadow: 0 40px 100px rgba(0,0,0,.35); }
-    .screen { height:100%; border-radius:32px; background:var(--card); padding:24px; overflow:hidden; }
+    .screen { height:100%; border-radius:32px; background:var(--card); padding:0; overflow:hidden; }
+    .hero-shot { width:100%; height:100%; object-fit:cover; display:block; }
     .card { padding:20px; border-radius:24px; background:rgba(255,255,255,.055); margin:14px 0; }
     .score { color:var(--green); font-weight:900; }
     .grid { display:grid; grid-template-columns: repeat(3,1fr); gap:18px; padding:0 6vw 72px; }
@@ -29,9 +30,11 @@
     .strip { padding: 0 6vw 72px; }
 
     .screenshots { padding:0 6vw 72px; }
-    .screenshots .placeholder { background:rgba(255,255,255,.055); border:1px dashed rgba(255,255,255,.18); border-radius:28px; padding:28px; }
-    .shot-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:18px; }
-    .shot-grid img { width:100%; border-radius:24px; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 60px rgba(0,0,0,.25); }
+    .screenshots .gallery-panel { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); border-radius:28px; padding:28px; }
+    .shot-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:18px; margin-top:24px; }
+    .shot-card { margin:0; }
+    .shot-card img { width:100%; display:block; border-radius:24px; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 60px rgba(0,0,0,.25); }
+    .shot-card figcaption { color:var(--muted); font-weight:700; margin-top:10px; text-align:center; }
     .strip-inner { background: rgba(255,255,255,.055); border-radius: 28px; padding: 28px; border: 1px solid rgba(255,255,255,.08); }
     footer { padding:38px 6vw; color:var(--muted); border-top:1px solid rgba(255,255,255,.08); }
     @media (max-width: 860px) { .hero, .grid { grid-template-columns:1fr; } .shot-grid { grid-template-columns:1fr 1fr; } .phone { min-height:480px; } }
@@ -53,10 +56,7 @@
   </div>
   <div class="phone">
     <div class="screen">
-      <h2>Tonight's pick</h2>
-      <div class="card"><b>Arsenal vs Chelsea</b><br><span style="color:var(--muted)">Premier League • 16:30</span></div>
-      <div class="card"><b>The Quiet Half</b><br><span class="score">91 fit</span><br><span style="color:var(--muted)">calm screens • solo-friendly • 55 dB</span></div>
-      <div class="card"><b>The Full Time Arms</b><br><span class="score">84 fit</span><br><span style="color:var(--muted)">big atmosphere • 8 screens • chants likely</span></div>
+      <img class="hero-shot" src="screenshots/03-home.jpg" alt="MatchPint home screen showing nearby pub and fixture recommendations" />
     </div>
   </div>
 </section>
@@ -66,9 +66,47 @@
   <div class="feature"><b>Match night passport</b><p>Every saved pub and fixture becomes part of the user’s personal football watching history.</p></div>
 </section>
 <section class="screenshots" id="screenshots">
-  <div class="placeholder">
+  <div class="gallery-panel">
     <h2>App screens</h2>
-    <p>Uploaded app screenshots should be referenced from <code>screenshots/</code> inside the published <code>docs/</code> site, for example <code>screenshots/02-home.png</code>. No screenshot files were visible in this checkout, so this placeholder avoids broken image links until the existing uploaded files are available on this branch.</p>
+    <p>These screenshots show the submitted MatchPint flow from account entry and onboarding through fixture discovery, pub search, map support, match-night recording and settings.</p>
+    <div class="shot-grid">
+      <figure class="shot-card">
+        <img src="screenshots/01-login-register.jpg" alt="Login and register screens" />
+        <figcaption>Login / register</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/02-onboarding.jpg" alt="Onboarding flow screens" />
+        <figcaption>Onboarding</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/03-home.jpg" alt="Home screen" />
+        <figcaption>Home</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/04-matches.jpg" alt="Matches screen" />
+        <figcaption>Matches</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/05-pubs-search.jpg" alt="Pubs search screen" />
+        <figcaption>Pub search</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/06-pub-detail.jpg" alt="Pub detail screen" />
+        <figcaption>Pub detail</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/07-map.jpg" alt="Map screen" />
+        <figcaption>Map</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/08-experience-record.jpg" alt="Experience record screen" />
+        <figcaption>Experience record</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img src="screenshots/09-settings.jpg" alt="Settings screen" />
+        <figcaption>Settings</figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 <section class="strip">
